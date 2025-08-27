@@ -5,6 +5,7 @@ import PersonalDevelopment from './components/PersonalDevelopment';
 import HealthFitness from './components/HealthFitness';
 import LearningTools from './components/LearningTools';
 import FinancesOverview from './components/FinancesOverview';
+import DrugAndMed from './components/DrugAndMed';
 
 
 function App() {
@@ -20,6 +21,8 @@ function App() {
         return <LearningTools />;
       case 'finances':
         return <FinancesOverview />;
+      case 'medication':
+      return <DrugAndMed />;
       default:
         return <Dashboard />;
     }
