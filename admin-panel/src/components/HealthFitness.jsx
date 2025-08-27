@@ -2,25 +2,34 @@ import React, { useState } from 'react';
 
 const HealthFitness = () => {
   const [activeTab, setActiveTab] = useState('workouts');
+  const [workouts, setWorkouts] = useState([]);
+  const [goalsState, setGoalsState] = useState([]);
+  const [dietEntries, setDietEntries] = useState([]);
+  const [showWorkoutForm, setShowWorkoutForm] = useState(false);
+  const [newWorkout, setNewWorkout] = useState({ type: '', duration: '30 min', calories: 0 });
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [newGoal, setNewGoal] = useState({ title: '', target: '', deadline: '' });
+  const [showMealForm, setShowMealForm] = useState(false);
+  const [newMeal, setNewMeal] = useState({ meal: 'Meal', food: '', calories: 0, protein: '0g', carbs: '0g', fat: '0g' });
 
   const workoutData = [
     { id: 1, type: 'Strength Training', duration: '45 min', calories: 320, date: '2024-01-15' },
     { id: 2, type: 'Cardio', duration: '30 min', calories: 280, date: '2024-01-14' },
     { id: 3, type: 'Yoga', duration: '60 min', calories: 180, date: '2024-01-13' },
     { id: 4, type: 'HIIT', duration: '25 min', calories: 350, date: '2024-01-12' },
-  ];
+  ].concat(workouts);
 
   const goals = [
     { id: 1, title: 'Lose 10 lbs', target: '10 lbs', current: '6 lbs', progress: 60, deadline: '2024-03-01' },
     { id: 2, title: 'Run 5K', target: '5K', current: '3.2K', progress: 64, deadline: '2024-02-15' },
     { id: 3, title: 'Build Muscle', target: '5 lbs', current: '2 lbs', progress: 40, deadline: '2024-04-01' },
-  ];
+  ].concat(goalsState);
 
   const dietLogs = [
     { id: 1, meal: 'Breakfast', food: 'Oatmeal with berries', calories: 320, protein: '12g', carbs: '45g', fat: '8g' },
     { id: 2, meal: 'Lunch', food: 'Grilled chicken salad', calories: 450, protein: '35g', carbs: '15g', fat: '22g' },
     { id: 3, meal: 'Dinner', food: 'Salmon with quinoa', calories: 580, protein: '42g', carbs: '35g', fat: '28g' },
-  ];
+  ].concat(dietEntries);
 
   const tabs = [
     { id: 'workouts', label: 'Workouts', icon: '💪' },
@@ -32,8 +41,26 @@ const HealthFitness = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Recent Workouts</h3>
-        <button className="btn-primary">Add Workout</button>
+        <button className="btn-primary" onClick={() => setShowWorkoutForm(true)}>Add Workout</button>
       </div>
+      {showWorkoutForm && (
+        <div className="card p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <input className="input-field" placeholder="Type (e.g., Cardio)" value={newWorkout.type} onChange={(e) => setNewWorkout({ ...newWorkout, type: e.target.value })} />
+            <input className="input-field" placeholder="Duration (e.g., 30 min)" value={newWorkout.duration} onChange={(e) => setNewWorkout({ ...newWorkout, duration: e.target.value })} />
+            <input className="input-field" type="number" placeholder="Calories" value={newWorkout.calories} onChange={(e) => setNewWorkout({ ...newWorkout, calories: parseInt(e.target.value || '0', 10) })} />
+            <div className="flex space-x-2">
+              <button className="btn-primary" onClick={() => {
+                if (!newWorkout.type) { alert('Enter type'); return; }
+                setWorkouts(prev => [{ id: Date.now(), date: new Date().toISOString().slice(0,10), ...newWorkout }, ...prev]);
+                setNewWorkout({ type: '', duration: '30 min', calories: 0 });
+                setShowWorkoutForm(false);
+              }}>Save</button>
+              <button className="btn-secondary" onClick={() => setShowWorkoutForm(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="grid gap-4">
         {workoutData.map((workout) => (
           <div key={workout.id} className="card p-4">
@@ -57,8 +84,26 @@ const HealthFitness = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Fitness Goals</h3>
-        <button className="btn-primary">Add Goal</button>
+        <button className="btn-primary" onClick={() => setShowGoalForm(true)}>Add Goal</button>
       </div>
+      {showGoalForm && (
+        <div className="card p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <input className="input-field" placeholder="Title" value={newGoal.title} onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })} />
+            <input className="input-field" placeholder="Target (e.g., 5K)" value={newGoal.target} onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })} />
+            <input className="input-field" type="date" placeholder="Deadline" value={newGoal.deadline} onChange={(e) => setNewGoal({ ...newGoal, deadline: e.target.value })} />
+            <div className="flex space-x-2">
+              <button className="btn-primary" onClick={() => {
+                if (!newGoal.title || !newGoal.target) { alert('Enter title and target'); return; }
+                setGoalsState(prev => [{ id: Date.now(), title: newGoal.title, target: newGoal.target, current: '0', progress: 0, deadline: newGoal.deadline || 'N/A' }, ...prev]);
+                setNewGoal({ title: '', target: '', deadline: '' });
+                setShowGoalForm(false);
+              }}>Save</button>
+              <button className="btn-secondary" onClick={() => setShowGoalForm(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="grid gap-4">
         {goals.map((goal) => (
           <div key={goal.id} className="card p-4">
@@ -88,8 +133,28 @@ const HealthFitness = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Diet Logs</h3>
-        <button className="btn-primary">Log Meal</button>
+        <button className="btn-primary" onClick={() => setShowMealForm(true)}>Log Meal</button>
       </div>
+      {showMealForm && (
+        <div className="card p-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <input className="input-field" placeholder="Meal (e.g., Breakfast)" value={newMeal.meal} onChange={(e) => setNewMeal({ ...newMeal, meal: e.target.value })} />
+            <input className="input-field" placeholder="Food" value={newMeal.food} onChange={(e) => setNewMeal({ ...newMeal, food: e.target.value })} />
+            <input className="input-field" type="number" placeholder="Calories" value={newMeal.calories} onChange={(e) => setNewMeal({ ...newMeal, calories: parseInt(e.target.value || '0', 10) })} />
+            <input className="input-field" placeholder="Protein (g)" value={newMeal.protein} onChange={(e) => setNewMeal({ ...newMeal, protein: e.target.value })} />
+            <input className="input-field" placeholder="Carbs (g)" value={newMeal.carbs} onChange={(e) => setNewMeal({ ...newMeal, carbs: e.target.value })} />
+            <div className="flex space-x-2">
+              <button className="btn-primary" onClick={() => {
+                if (!newMeal.food) { alert('Enter food'); return; }
+                setDietEntries(prev => [{ id: Date.now(), ...newMeal }, ...prev]);
+                setNewMeal({ meal: 'Meal', food: '', calories: 0, protein: '0g', carbs: '0g', fat: '0g' });
+                setShowMealForm(false);
+              }}>Save</button>
+              <button className="btn-secondary" onClick={() => setShowMealForm(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="grid gap-4">
         {dietLogs.map((log) => (
           <div key={log.id} className="card p-4">

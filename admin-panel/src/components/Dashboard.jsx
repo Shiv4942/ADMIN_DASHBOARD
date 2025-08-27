@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const Dashboard = () => {
   const stats = [
@@ -8,12 +8,26 @@ const Dashboard = () => {
     { label: 'Monthly Revenue', value: '$12,450', change: '+18%', icon: '💰' },
   ];
 
-  const recentActivities = [
+  const initialActivities = [
     { type: 'Workout', description: 'Completed strength training session', time: '2 hours ago' },
     { type: 'Course', description: 'Finished React Advanced Concepts', time: '1 day ago' },
     { type: 'Email', description: 'Replied to client inquiry', time: '3 hours ago' },
     { type: 'Finance', description: 'Updated monthly budget', time: '1 day ago' },
   ];
+
+  const [recentActivities, setRecentActivities] = useState(initialActivities);
+
+  const addActivity = (type, description) => {
+    setRecentActivities(prev => [
+      { type, description, time: 'just now' },
+      ...prev
+    ]);
+  };
+
+  const handleAddWorkout = () => addActivity('Workout', 'Logged a new workout');
+  const handleLogMeal = () => addActivity('Diet', 'Logged a meal');
+  const handleStartCourse = () => addActivity('Course', 'Started a new course');
+
 
   return (
     <div className="space-y-6">
@@ -68,10 +82,9 @@ const Dashboard = () => {
       <div className="card">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="btn-primary">Add Workout</button>
-          <button className="btn-secondary">Log Meal</button>
-          <button className="btn-secondary">Start Course</button>
-          <button className="btn-primary">Send Email</button>
+          <button className="btn-primary" onClick={handleAddWorkout}>Add Workout</button>
+          <button className="btn-secondary" onClick={handleLogMeal}>Log Meal</button>
+          <button className="btn-secondary" onClick={handleStartCourse}>Start Course</button>
         </div>
       </div>
     </div>

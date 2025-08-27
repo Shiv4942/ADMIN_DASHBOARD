@@ -5,9 +5,8 @@ const Sidebar = ({ activeSection, setActiveSection }) => {
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'health-fitness', label: 'Health & Fitness', icon: '💪' },
     { id: 'learning-tools', label: 'Learning Tools', icon: '📚' },
-    { id: 'emails', label: 'Email Management', icon: '📧' },
     { id: 'finances', label: 'Finances Overview', icon: '💰' },
-    { id: 'registrations', label: 'Registrations', icon: '👥' },
+    
   ];
 
   return (

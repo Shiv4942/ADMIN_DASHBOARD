@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 
 const FinancesOverview = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [customBudgets, setCustomBudgets] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [showBudgetForm, setShowBudgetForm] = useState(false);
+  const [newBudget, setNewBudget] = useState({ category: '', budget: 0 });
+  const [showTxnForm, setShowTxnForm] = useState(false);
+  const [newTxn, setNewTxn] = useState({ description: '', amount: 0, category: 'General', type: 'expense' });
 
   const financialData = {
     currentBalance: 15420.50,
@@ -34,7 +40,7 @@ const FinancesOverview = () => {
     { category: 'Food & Dining', budget: 800.00, spent: 680.00, remaining: 120.00 },
     { category: 'Transportation', budget: 500.00, spent: 450.00, remaining: 50.00 },
     { category: 'Entertainment', budget: 400.00, spent: 320.00, remaining: 80.00 },
-  ];
+  ].concat(customBudgets);
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📊' },
@@ -175,8 +181,39 @@ const FinancesOverview = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Budget Tracking</h3>
-        <button className="btn-primary">Set Budget</button>
+        <button className="btn-primary" onClick={() => setShowBudgetForm(true)}>Set Budget</button>
       </div>
+      {showBudgetForm && (
+        <div className="card p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input 
+              className="input-field" 
+              placeholder="Category" 
+              value={newBudget.category} 
+              onChange={(e) => setNewBudget({ ...newBudget, category: e.target.value })}
+            />
+            <input 
+              className="input-field" 
+              placeholder="Monthly budget" 
+              type="number" 
+              value={newBudget.budget} 
+              onChange={(e) => setNewBudget({ ...newBudget, budget: parseFloat(e.target.value || 0) })}
+            />
+            <div className="flex space-x-2">
+              <button 
+                className="btn-primary"
+                onClick={() => {
+                  if (!newBudget.category || newBudget.budget <= 0) { alert('Enter category and amount'); return; }
+                  setCustomBudgets(prev => [...prev, { category: newBudget.category, budget: newBudget.budget, spent: 0, remaining: newBudget.budget }]);
+                  setNewBudget({ category: '', budget: 0 });
+                  setShowBudgetForm(false);
+                }}
+              >Save</button>
+              <button className="btn-secondary" onClick={() => setShowBudgetForm(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="grid gap-4">
         {budgets.map((budget, index) => (
           <div key={index} className="card p-4">
@@ -211,10 +248,35 @@ const FinancesOverview = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Recent Transactions</h3>
-        <button className="btn-primary">Add Transaction</button>
+        <button className="btn-primary" onClick={() => setShowTxnForm(true)}>Add Transaction</button>
       </div>
+      {showTxnForm && (
+        <div className="card p-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <input className="input-field" placeholder="Description" value={newTxn.description} onChange={(e) => setNewTxn({ ...newTxn, description: e.target.value })} />
+            <input className="input-field" type="number" placeholder="Amount" value={newTxn.amount} onChange={(e) => setNewTxn({ ...newTxn, amount: parseFloat(e.target.value || 0) })} />
+            <input className="input-field" placeholder="Category" value={newTxn.category} onChange={(e) => setNewTxn({ ...newTxn, category: e.target.value })} />
+            <select className="input-field" value={newTxn.type} onChange={(e) => setNewTxn({ ...newTxn, type: e.target.value })}>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+            <div className="flex space-x-2">
+              <button 
+                className="btn-primary"
+                onClick={() => {
+                  if (!newTxn.description || !newTxn.amount) { alert('Enter description and amount'); return; }
+                  setTransactions(prev => [{ id: Date.now(), date: new Date().toISOString().slice(0,10), ...newTxn }, ...prev]);
+                  setNewTxn({ description: '', amount: 0, category: 'General', type: 'expense' });
+                  setShowTxnForm(false);
+                }}
+              >Save</button>
+              <button className="btn-secondary" onClick={() => setShowTxnForm(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="grid gap-4">
-        {recentTransactions.map((transaction) => (
+        {[...transactions, ...recentTransactions].map((transaction) => (
           <div key={transaction.id} className="card p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
