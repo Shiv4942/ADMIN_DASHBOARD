@@ -6,6 +6,7 @@ import financeRoutes from './routes/finance.js';
 import dashboardRoutes from './routes/dashboard.js';
 import medicationRoutes from './routes/medications.js';
 import therapyRoutes from './routes/therapy.js';
+import mongoose from 'mongoose'; // Added for health check
 
 dotenv.config();
 const app = express();
@@ -48,6 +49,13 @@ app.use((req, res, next) => {
   next();
 });
 
+// Timeout middleware - prevent requests from hanging
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 seconds
+  res.setTimeout(30000); // 30 seconds
+  next();
+});
+
 app.use(express.json());
 
 // Routes
@@ -55,6 +63,19 @@ app.use('/api/finance', financeRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/therapy', therapyRoutes);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  const health = {
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  };
+  
+  res.status(200).json(health);
+});
 
 const start = async () => {
   try {
