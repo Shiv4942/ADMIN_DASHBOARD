@@ -6,14 +6,19 @@ const router = Router();
 // Simple static conversion; option to override via env
 const USD_TO_INR = Number(process.env.USD_TO_INR || 83.25);
 
-const convert = (usd) => ({ usd, inr: Math.round(usd * USD_TO_INR * 100) / 100 });
+// Convert USD to INR for display purposes only
+const convertForDisplay = (amount) => ({ 
+  usd: amount, 
+  inr: Math.round(amount * USD_TO_INR * 100) / 100 
+});
 
+// For summary calculations, we'll use the original amounts
 const mapSummary = (summary) => ({
-  currentBalance: convert(summary.currentBalance),
-  monthlyIncome: convert(summary.monthlyIncome),
-  monthlyExpenses: convert(summary.monthlyExpenses),
-  savings: convert(summary.savings),
-  investments: convert(summary.investments)
+  currentBalance: convertForDisplay(summary.currentBalance),
+  monthlyIncome: convertForDisplay(summary.monthlyIncome),
+  monthlyExpenses: convertForDisplay(summary.monthlyExpenses),
+  savings: convertForDisplay(summary.savings),
+  investments: convertForDisplay(summary.investments)
 });
 
 // Helper function to safely find or create snapshot
@@ -54,7 +59,7 @@ const addTransactionAtomically = async (transactionData) => {
             transactions: { 
               $each: [{ 
                 description: description.trim(), 
-                amount, 
+                amount: Number(amount), // Store amount as-is
                 category: category || 'General', 
                 date: date || new Date().toISOString().split('T')[0], 
                 type 
@@ -63,9 +68,9 @@ const addTransactionAtomically = async (transactionData) => {
             } 
           },
           $inc: {
-            'summary.currentBalance': type === 'income' ? amount : -amount,
-            'summary.monthlyIncome': type === 'income' ? amount : 0,
-            'summary.monthlyExpenses': type === 'expense' ? amount : 0
+            'summary.currentBalance': type === 'income' ? Number(amount) : -Number(amount),
+            'summary.monthlyIncome': type === 'income' ? Number(amount) : 0,
+            'summary.monthlyExpenses': type === 'expense' ? Number(amount) : 0
           },
           $set: { updatedAt: new Date() }
         },
@@ -101,8 +106,8 @@ const setBudgetAtomically = async (budgetData) => {
         { 'budgets.category': category.trim() },
         { 
           $set: { 
-            'budgets.$.budget': budget,
-            'budgets.$.remaining': budget, // Reset remaining to budget amount
+            'budgets.$.budget': Number(budget), // Store budget as-is
+            'budgets.$.remaining': Number(budget), // Reset remaining to budget amount
             updatedAt: new Date()
           }
         },
@@ -117,9 +122,9 @@ const setBudgetAtomically = async (budgetData) => {
             $push: { 
               budgets: { 
                 category: category.trim(), 
-                budget, 
+                budget: Number(budget), // Store budget as-is
                 spent: 0, 
-                remaining: budget 
+                remaining: Number(budget) // Store remaining as-is
               } 
             },
             $set: { updatedAt: new Date() }
@@ -151,13 +156,13 @@ router.get('/overview', async (req, res) => {
     
     res.json({
       summary: mapSummary(snap.summary),
-      expenses: snap.expenses.map(e => ({ ...e.toObject(), amount: convert(e.amount) })),
-      transactions: snap.transactions.map(t => ({ ...t.toObject(), amount: convert(t.amount) })),
+      expenses: snap.expenses.map(e => ({ ...e.toObject(), amount: convertForDisplay(e.amount) })),
+      transactions: snap.transactions.map(t => ({ ...t.toObject(), amount: convertForDisplay(t.amount) })),
       budgets: snap.budgets.map(b => ({
         category: b.category,
-        budget: convert(b.budget),
-        spent: convert(b.spent),
-        remaining: convert(b.remaining)
+        budget: convertForDisplay(b.budget),
+        spent: convertForDisplay(b.spent),
+        remaining: convertForDisplay(b.remaining)
       }))
     });
   } catch (e) {
