@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import search from '../assets/search.svg'
 import { find } from '../assets/assets'
 import { medicine } from '../assets/assets'
+import { API_ENDPOINTS } from '../config/api';
 
 const DrugAndMed = () => {
   const [query, setQuery] = useState('')
@@ -14,7 +15,7 @@ const DrugAndMed = () => {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ name: '', dosage: '', frequency: '', startDate: '', endDate: '', notes: '' })
 
-  const API_BASE = '/api/medications'
+  const API_BASE = API_ENDPOINTS.MEDICATIONS;
   const authHeaders = () => ({ 'Content-Type': 'application/json' })
 
   const loadMeds = async () => {

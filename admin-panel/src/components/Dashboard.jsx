@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { API_ENDPOINTS } from '../config/api';
 
 const Dashboard = () => {
-  const API_BASE = '/api/dashboard';
+  const API_BASE = API_ENDPOINTS.DASHBOARD;
 
   const [stats, setStats] = useState({
     totalWorkouts: 0,

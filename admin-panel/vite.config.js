@@ -8,18 +8,16 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': { 
-        target: process.env.NODE_ENV === 'production' 
-          ? 'https://admin-dashboard-qdgo.onrender.com' 
-          : 'http://localhost:5000',
+        target: 'http://localhost:5000',
         changeOrigin: true 
       }
     }
   },
-  define: {
-    __API_BASE__: JSON.stringify(
-      process.env.NODE_ENV === 'production' 
-        ? 'https://admin-dashboard-qdgo.onrender.com/api' 
-        : '/api'
-    )
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
   }
 })

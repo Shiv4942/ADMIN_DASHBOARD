@@ -15,7 +15,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173', // Development
     'http://localhost:3000', // Alternative dev port
-    'https://eco-cycle-sage.vercel.app/', // Replace with your actual frontend domain
+    'https://admin-dashboard-cza3batbl-shiv4942s-projects.vercel.app/', // Replace with your actual frontend domain
     'https://admin-dashboard-qdgo.onrender.com' // Your backend domain (for testing)
   ],
   credentials: true

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_ENDPOINTS } from '../config/api';
 
 const FinancesOverview = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -8,7 +9,7 @@ const FinancesOverview = () => {
   const [showTxnForm, setShowTxnForm] = useState(false);
   const [newTxn, setNewTxn] = useState({ description: '', amount: 0, category: 'General', type: 'expense' });
 
-  const API_BASE = '/api/finance';
+  const API_BASE = API_ENDPOINTS.FINANCE;
 
   const fetchOverview = async () => {
     try {
