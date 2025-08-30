@@ -156,13 +156,34 @@ router.get('/overview', async (req, res) => {
     
     res.json({
       summary: mapSummary(snap.summary),
-      expenses: snap.expenses.map(e => ({ ...e.toObject(), amount: convertForDisplay(e.amount) })),
-      transactions: snap.transactions.map(t => ({ ...t.toObject(), amount: convertForDisplay(t.amount) })),
+      expenses: snap.expenses.map(e => ({ 
+        ...e.toObject(), 
+        amount: {
+          original: e.amount, // Keep original amount
+          ...convertForDisplay(e.amount) // Add converted amounts
+        }
+      })),
+      transactions: snap.transactions.map(t => ({ 
+        ...t.toObject(), 
+        amount: {
+          original: t.amount, // Keep original amount
+          ...convertForDisplay(t.amount) // Add converted amounts
+        }
+      })),
       budgets: snap.budgets.map(b => ({
         category: b.category,
-        budget: convertForDisplay(b.budget),
-        spent: convertForDisplay(b.spent),
-        remaining: convertForDisplay(b.remaining)
+        budget: {
+          original: b.budget, // Keep original amount
+          ...convertForDisplay(b.budget) // Add converted amounts
+        },
+        spent: {
+          original: b.spent, // Keep original amount
+          ...convertForDisplay(b.spent) // Add converted amounts
+        },
+        remaining: {
+          original: b.remaining, // Keep original amount
+          ...convertForDisplay(b.remaining) // Add converted amounts
+        }
       }))
     });
   } catch (e) {

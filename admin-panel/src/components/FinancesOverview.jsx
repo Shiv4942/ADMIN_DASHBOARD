@@ -8,6 +8,7 @@ const FinancesOverview = () => {
   const [newBudget, setNewBudget] = useState({ category: '', budget: 0 });
   const [showTxnForm, setShowTxnForm] = useState(false);
   const [newTxn, setNewTxn] = useState({ description: '', amount: 0, category: 'General', type: 'expense' });
+  const [showBothCurrencies, setShowBothCurrencies] = useState(false);
 
   const API_BASE = API_ENDPOINTS.FINANCE;
 
@@ -47,8 +48,29 @@ const FinancesOverview = () => {
 
   const fmtUSD = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
   const fmtINR = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
-  // Default currency: INR
-  const show = (amountObj) => amountObj ? fmtINR(amountObj.inr) : '-';
+  
+  // Show original amount by default (no conversion)
+  const show = (amountObj) => {
+    if (!amountObj) return '-';
+    // If amountObj has 'original' property, use that
+    if (amountObj.original !== undefined) {
+      if (showBothCurrencies) {
+        return `${fmtUSD(amountObj.original)} / ${fmtINR(amountObj.inr)}`;
+      }
+      return fmtUSD(amountObj.original);
+    }
+    // Fallback to existing logic for backward compatibility
+    return fmtINR(amountObj.inr);
+  };
+  
+  // Show both USD and INR for reference
+  const showBoth = (amountObj) => {
+    if (!amountObj) return '-';
+    if (amountObj.original !== undefined) {
+      return `${fmtUSD(amountObj.original)} / ${fmtINR(amountObj.inr)}`;
+    }
+    return fmtINR(amountObj.inr);
+  };
 
   const renderOverview = () => {
     if (!financialData) {
@@ -62,6 +84,17 @@ const FinancesOverview = () => {
     }
     return (
     <div className="space-y-6">
+      {/* Currency Toggle */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
+        <button 
+          onClick={() => setShowBothCurrencies(!showBothCurrencies)}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          {showBothCurrencies ? 'Show USD Only' : 'Show Both Currencies'}
+        </button>
+      </div>
+      
       {/* Financial Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="card">
@@ -235,14 +268,14 @@ const FinancesOverview = () => {
             <div className="mb-3">
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>Spent: {show(budget.spent)}</span>
-                <span>{Math.round((budget.spent.usd / Math.max(budget.budget.usd, 1)) * 100)}%</span>
+                <span>{Math.round((budget.spent.original / Math.max(budget.budget.original, 1)) * 100)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className={`h-2 rounded-full transition-all duration-300 ${
-                    (budget.spent.usd / Math.max(budget.budget.usd, 1)) > 0.9 ? 'bg-red-500' : 'bg-green-500'
+                    (budget.spent.original / Math.max(budget.budget.original, 1)) > 0.9 ? 'bg-red-500' : 'bg-green-500'
                   }`}
-                  style={{ width: `${Math.min((budget.spent.usd / Math.max(budget.budget.usd, 1)) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((budget.spent.original / Math.max(budget.budget.original, 1)) * 100, 100)}%` }}
                 ></div>
               </div>
             </div>
