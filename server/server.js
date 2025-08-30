@@ -11,15 +11,43 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// CORS configuration
 app.use(cors({
-  origin: [
-    'http://localhost:5173', // Development
-    'http://localhost:3000', // Alternative dev port
-    'https://admin-dashboard-cza3batbl-shiv4942s-projects.vercel.app/', // Replace with your actual frontend domain
-    'https://admin-dashboard-qdgo.onrender.com' // Your backend domain (for testing)
-  ],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:5173', // Development
+      'http://localhost:3000', // Alternative dev port
+      'https://admin-dashboard-cza3batbl-shiv4942s-projects.vercel.app', // Vercel frontend
+      'https://admin-dashboard-git-master-shiv4942s-projects.vercel.app', // Vercel frontend
+      'https://admin-dashboard-qdgo.onrender.com' // Your backend domain
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('Blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Handle preflight requests explicitly
+app.options('*', cors());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin}`);
+  next();
+});
+
 app.use(express.json());
 
 // Routes
