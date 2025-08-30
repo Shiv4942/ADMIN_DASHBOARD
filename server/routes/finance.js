@@ -96,57 +96,44 @@ const setBudgetAtomically = async (budgetData) => {
   let retries = 3;
   while (retries > 0) {
     try {
-      // Use findOneAndUpdate with atomic operations
-      const result = await FinanceSnapshot.findOneAndUpdate(
-        {}, // Find any document
-        {
+      // First, try to update existing budget
+      const updateResult = await FinanceSnapshot.updateOne(
+        { 'budgets.category': category.trim() },
+        { 
           $set: { 
-            updatedAt: new Date(),
-            $or: [
-              // Update existing budget
-              {
-                'budgets': {
-                  $elemMatch: { category: category.trim() }
-                }
-              },
-              // Add new budget if category doesn't exist
-              {
-                $push: { 
-                  budgets: { 
-                    category: category.trim(), 
-                    budget, 
-                    spent: 0, 
-                    remaining: budget 
-                  } 
-                } 
-              }
-            ]
+            'budgets.$.budget': budget,
+            'budgets.$.remaining': budget, // Reset remaining to budget amount
+            updatedAt: new Date()
           }
         },
-        { 
-          new: true, 
-          upsert: true, // Create if doesn't exist
-          runValidators: true,
-          maxTimeMS: 15000
-        }
+        { maxTimeMS: 15000 }
       );
       
-      // If category exists, update it atomically
-      if (result.budgets.some(b => b.category === category.trim())) {
-        await FinanceSnapshot.updateOne(
-          { 'budgets.category': category.trim() },
-          { 
-            $set: { 
-              'budgets.$.budget': budget,
-              'budgets.$.remaining': Math.max(0, budget - (result.budgets.find(b => b.category === category.trim())?.spent || 0)),
-              updatedAt: new Date()
-            }
+      // If no budget was updated, create a new one
+      if (updateResult.matchedCount === 0) {
+        await FinanceSnapshot.findOneAndUpdate(
+          {}, // Find any document
+          {
+            $push: { 
+              budgets: { 
+                category: category.trim(), 
+                budget, 
+                spent: 0, 
+                remaining: budget 
+              } 
+            },
+            $set: { updatedAt: new Date() }
           },
-          { maxTimeMS: 15000 }
+          { 
+            new: true, 
+            upsert: true, // Create if doesn't exist
+            runValidators: true,
+            maxTimeMS: 15000
+          }
         );
       }
       
-      return result;
+      return { success: true };
     } catch (error) {
       retries--;
       if (retries === 0) {
@@ -183,6 +170,8 @@ router.post('/transactions', async (req, res) => {
   try {
     const { description, amount, category, date, type } = req.body;
     
+    console.log('Adding transaction:', { description, amount, category, date, type });
+    
     // Validate input
     if (!description || !amount || !type) {
       return res.status(400).json({ error: 'Missing required fields: description, amount, type' });
@@ -197,7 +186,8 @@ router.post('/transactions', async (req, res) => {
     }
     
     // Use atomic operation to avoid version conflicts
-    await addTransactionAtomically({ description, amount, category, date, type });
+    const result = await addTransactionAtomically({ description, amount, category, date, type });
+    console.log('Transaction added successfully:', result);
     
     res.json({ ok: true, message: 'Transaction added successfully' });
   } catch (e) {
@@ -210,6 +200,8 @@ router.post('/budgets', async (req, res) => {
   try {
     const { category, budget } = req.body;
     
+    console.log('Setting budget:', { category, budget });
+    
     // Validate input
     if (!category || !budget) {
       return res.status(400).json({ error: 'Missing required fields: category, budget' });
@@ -220,7 +212,8 @@ router.post('/budgets', async (req, res) => {
     }
     
     // Use atomic operation to avoid version conflicts
-    await setBudgetAtomically({ category, budget });
+    const result = await setBudgetAtomically({ category, budget });
+    console.log('Budget set successfully:', result);
     
     res.json({ ok: true, message: 'Budget set successfully' });
   } catch (e) {
