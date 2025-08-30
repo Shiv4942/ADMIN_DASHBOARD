@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 const Dashboard = () => {
-  const API_BASE = 'http://localhost:5000/api/dashboard';
+  const API_BASE = '/api/dashboard';
 
   const [stats, setStats] = useState({
     totalWorkouts: 0,
