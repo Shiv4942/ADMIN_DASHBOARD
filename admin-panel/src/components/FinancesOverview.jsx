@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { API_ENDPOINTS } from '../config/api';
+import { Chart, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+
+// Register Chart.js components
+Chart.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const FinancesOverview = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -9,6 +13,8 @@ const FinancesOverview = () => {
   const [showTxnForm, setShowTxnForm] = useState(false);
   const [newTxn, setNewTxn] = useState({ description: '', amount: 0, category: 'General', type: 'expense' });
   const [showBothCurrencies, setShowBothCurrencies] = useState(false);
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
 
   const API_BASE = API_ENDPOINTS.FINANCE;
 
@@ -32,6 +38,85 @@ const FinancesOverview = () => {
   }, []);
 
   const financialData = overview.summary;
+
+  // Prepare chart data
+  const prepareChartData = (expenses) => {
+    const categories = {};
+    
+    expenses.forEach(expense => {
+      const category = expense.category || 'Uncategorized';
+      const amount = expense.amount?.original || expense.amount?.inr || 0;
+      
+      if (!categories[category]) {
+        categories[category] = 0;
+      }
+      categories[category] += amount;
+    });
+
+    const labels = Object.keys(categories);
+    const data = Object.values(categories);
+    
+    // Generate colors based on category names
+    const backgroundColors = labels.map((_, i) => {
+      const hue = (i * 137.508) % 360; // Golden angle approximation for distinct colors
+      return `hsl(${hue}, 70%, 60%)`;
+    });
+
+    return {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: backgroundColors,
+        borderWidth: 1
+      }]
+    };
+  };
+
+  // Initialize or update chart
+  useEffect(() => {
+    if (chartRef.current && monthlyData.length > 0) {
+      const ctx = chartRef.current.getContext('2d');
+      
+      // Destroy previous chart instance if it exists
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+      
+      const chartData = prepareChartData(monthlyData);
+      
+      chartInstance.current = new Chart(ctx, {
+        type: 'doughnut',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${fmtINR(value)} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Cleanup function to destroy chart on unmount
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+    };
+  }, [monthlyData]);
 
   // Get combined monthly expenses and transactions
   const getCombinedMonthlyData = () => {
@@ -340,11 +425,17 @@ const FinancesOverview = () => {
             </div>
           </div>
 
-        {/* Expense Chart Placeholder */}
+        {/* Expense Chart */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Chart</h3>
-          <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Chart visualization would go here</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Distribution</h3>
+          <div className="h-64">
+            {monthlyData.length > 0 ? (
+              <canvas ref={chartRef} />
+            ) : (
+              <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                <p className="text-gray-500">No expense data available for this month</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
