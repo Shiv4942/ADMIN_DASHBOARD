@@ -33,9 +33,30 @@ const FinancesOverview = () => {
 
   const financialData = overview.summary;
 
-  const monthlyExpenses = overview.expenses;
+  // Get current month's expenses
+  const getCurrentMonthExpenses = () => {
+    if (!overview.expenses || !overview.expenses.length) return [];
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Filter expenses for current month
+    return overview.expenses.filter(expense => {
+      const expenseDate = new Date(expense.date || expense.timestamp);
+      return expenseDate.getMonth() === currentMonth && 
+             expenseDate.getFullYear() === currentYear;
+    });
+  };
 
-  const recentTransactions = overview.transactions;
+  const monthlyExpenses = getCurrentMonthExpenses();
+  const recentTransactions = overview.transactions || [];
+  
+  // Calculate total expenses for current month
+  const currentMonthTotal = monthlyExpenses.reduce((sum, exp) => {
+    const amount = exp.amount?.original || exp.amount?.inr || 0;
+    return sum + amount;
+  }, 0);
 
   const budgets = overview.budgets;
 
@@ -188,27 +209,71 @@ const FinancesOverview = () => {
     );
   };
 
-  const renderExpenses = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Expense Breakdown */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Expense Breakdown</h3>
-          <div className="space-y-3">
-            {monthlyExpenses.map((expense, index) => (
-              <div key={`${expense.category}-${index}`} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-4 h-4 rounded-full ${expense.color}`}></div>
-                  <span className="text-sm font-medium text-gray-900">{expense.category}</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{show(expense.amount)}</p>
-                  <p className="text-xs text-gray-500">{expense.percentage}%</p>
-                </div>
-              </div>
-            ))}
+  const renderExpenses = () => {
+    // Group expenses by category for the current month
+    const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
+      const category = expense.category || 'Uncategorized';
+      const amount = expense.amount?.original || expense.amount?.inr || 0;
+      
+      if (!acc[category]) {
+        acc[category] = { amount: 0, color: expense.color || 'bg-blue-500' };
+      }
+      acc[category].amount += amount;
+      return acc;
+    }, {});
+    
+    // Convert to array and calculate percentages
+    const expensesList = Object.entries(expensesByCategory).map(([category, data]) => {
+      const percentage = (data.amount / currentMonthTotal) * 100;
+      return {
+        category,
+        amount: { original: data.amount, usd: data.amount / 83.25 },
+        percentage: percentage.toFixed(1),
+        color: data.color
+      };
+    }).sort((a, b) => b.amount.original - a.amount.original);
+    
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Expense Breakdown */}
+          <div className="card">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Current Month's Expenses</h3>
+              <span className="text-sm font-medium text-blue-700">
+                {show({ original: currentMonthTotal, usd: currentMonthTotal / 83.25 })}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {expensesList.length > 0 ? (
+                expensesList.map((expense, index) => (
+                  <div key={`${expense.category}-${index}`} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-4 h-4 rounded-full ${expense.color}`}></div>
+                        <span className="text-sm font-medium text-gray-900">{expense.category}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">{show(expense.amount)}</p>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div 
+                        className="h-2 rounded-full bg-blue-500 transition-all duration-500"
+                        style={{ width: `${Math.min(expense.percentage, 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>{expense.percentage}% of total</span>
+                      <span>{show(expense.amount)}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">No expenses recorded for this month</p>
+              )}
+            </div>
           </div>
-        </div>
 
         {/* Expense Chart Placeholder */}
         <div className="card">
@@ -220,7 +285,7 @@ const FinancesOverview = () => {
       </div>
     </div>
   );
-
+  };
   const renderBudgets = () => (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
