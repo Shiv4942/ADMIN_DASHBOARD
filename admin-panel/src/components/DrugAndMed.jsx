@@ -289,15 +289,33 @@ const DrugAndMed = () => {
                 <td className='p-2'>{m.endDate ? String(m.endDate).slice(0,10) : '-'}</td>
                 <td className='p-2'>{m.notes || '-'}</td>
                 <td className='p-2'>
-                  <div className='flex gap-2'>
-                    <button className='px-2 py-1 bg-green-100 text-green-700 rounded text-sm' onClick={()=>logAdherence(m._id, 'taken')}>Taken</button>
-                    <button className='px-2 py-1 bg-red-100 text-red-700 rounded text-sm' onClick={()=>logAdherence(m._id, 'missed')}>Missed</button>
+                  <div className='flex flex-col gap-1'>
+                    <div className='flex gap-2'>
+                      <button 
+                        className={`px-2 py-1 rounded text-sm ${m.logs?.[0]?.status === 'taken' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700'}`} 
+                        onClick={()=>logAdherence(m._id, 'taken')}
+                      >
+                        Taken
+                      </button>
+                      <button 
+                        className={`px-2 py-1 rounded text-sm ${m.logs?.[0]?.status === 'missed' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700'}`} 
+                        onClick={()=>logAdherence(m._id, 'missed')}
+                      >
+                        Missed
+                      </button>
+                    </div>
+                    {m.logs?.[0]?.date && (
+                      <span className='text-xs text-gray-500'>
+                        Last: {new Date(m.logs[0].date).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className='p-2'>
                   <div className='flex gap-2'>
                     <button className='btn-secondary' onClick={()=>{ setEditingId(m._id); setShowForm(true); setForm({ name: m.name || '', dosage: m.dosage || '', frequency: m.frequency || '', startDate: (m.startDate || '').slice(0,10), endDate: (m.endDate || '').slice(0,10), notes: m.notes || '' }) }}>Edit</button>
                     <button className='px-3 py-1 bg-red-600 text-white rounded' onClick={()=>onDelete(m._id)}>Delete</button>
+// ... (rest of the code remains the same)
                   </div>
                 </td>
               </tr>
