@@ -33,30 +33,67 @@ const FinancesOverview = () => {
 
   const financialData = overview.summary;
 
-  // Get current month's expenses
-  const getCurrentMonthExpenses = () => {
-    if (!overview.expenses || !overview.expenses.length) return [];
-    
+  // Get combined monthly expenses and transactions
+  const getCombinedMonthlyData = () => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    
-    // Filter expenses for current month
-    return overview.expenses.filter(expense => {
-      const expenseDate = new Date(expense.date || expense.timestamp);
-      return expenseDate.getMonth() === currentMonth && 
-             expenseDate.getFullYear() === currentYear;
-    });
+    const combined = [];
+
+    // Process expenses
+    if (overview.expenses && overview.expenses.length) {
+      overview.expenses.forEach(expense => {
+        const expenseDate = new Date(expense.date || expense.timestamp);
+        if (expenseDate.getMonth() === currentMonth && 
+            expenseDate.getFullYear() === currentYear) {
+          combined.push({
+            ...expense,
+            type: 'expense',
+            amount: expense.amount || { original: 0, usd: 0 },
+            date: expenseDate
+          });
+        }
+      });
+    }
+
+    // Process transactions (only expense type)
+    if (overview.transactions && overview.transactions.length) {
+      overview.transactions.forEach(transaction => {
+        if (transaction.type === 'expense') {
+          const txnDate = new Date(transaction.date || transaction.timestamp);
+          if (txnDate.getMonth() === currentMonth && 
+              txnDate.getFullYear() === currentYear) {
+            combined.push({
+              ...transaction,
+              type: 'transaction',
+              amount: {
+                original: transaction.amount?.original || transaction.amount?.inr || 0,
+                usd: transaction.amount?.usd || 0
+              },
+              date: txnDate,
+              category: transaction.category || 'Uncategorized',
+              description: transaction.description || 'No description'
+            });
+          }
+        }
+      });
+    }
+
+    return combined;
   };
 
-  const monthlyExpenses = getCurrentMonthExpenses();
-  const recentTransactions = overview.transactions || [];
+  const monthlyData = getCombinedMonthlyData();
   
   // Calculate total expenses for current month
-  const currentMonthTotal = monthlyExpenses.reduce((sum, exp) => {
-    const amount = exp.amount?.original || exp.amount?.inr || 0;
+  const currentMonthTotal = monthlyData.reduce((sum, item) => {
+    const amount = item.amount?.original || item.amount?.inr || 0;
     return sum + amount;
   }, 0);
+
+  // Get recent transactions for the transactions tab
+  const recentTransactions = (overview.transactions || [])
+    .sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp))
+    .slice(0, 10);  // Show only 10 most recent transactions
 
   const budgets = overview.budgets;
 
@@ -210,28 +247,36 @@ const FinancesOverview = () => {
   };
 
   const renderExpenses = () => {
-    // Group expenses by category for the current month
-    const expensesByCategory = monthlyExpenses.reduce((acc, expense) => {
-      const category = expense.category || 'Uncategorized';
-      const amount = expense.amount?.original || expense.amount?.inr || 0;
+    // Group combined data by category for the current month
+    const dataByCategory = monthlyData.reduce((acc, item) => {
+      const category = item.category || 'Uncategorized';
+      const amount = item.amount?.original || item.amount?.inr || 0;
       
       if (!acc[category]) {
-        acc[category] = { amount: 0, color: expense.color || 'bg-blue-500' };
+        acc[category] = { 
+          amount: 0, 
+          color: item.color || 'bg-blue-500',
+          items: []
+        };
       }
       acc[category].amount += amount;
+      acc[category].items.push(item);
       return acc;
     }, {});
     
-    // Convert to array and calculate percentages
-    const expensesList = Object.entries(expensesByCategory).map(([category, data]) => {
-      const percentage = (data.amount / currentMonthTotal) * 100;
-      return {
-        category,
-        amount: { original: data.amount, usd: data.amount / 83.25 },
-        percentage: percentage.toFixed(1),
-        color: data.color
-      };
-    }).sort((a, b) => b.amount.original - a.amount.original);
+    // Convert to array, calculate percentages, and sort by amount
+    const expensesList = Object.entries(dataByCategory)
+      .map(([category, data]) => {
+        const percentage = currentMonthTotal > 0 ? (data.amount / currentMonthTotal) * 100 : 0;
+        return {
+          category,
+          amount: { original: data.amount, usd: data.amount / 83.25 },
+          percentage: percentage.toFixed(1),
+          color: data.color,
+          items: data.items.sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort items by date
+        };
+      })
+      .sort((a, b) => b.amount.original - a.amount.original);
     
     return (
       <div className="space-y-6">
@@ -247,25 +292,45 @@ const FinancesOverview = () => {
             <div className="space-y-3">
               {expensesList.length > 0 ? (
                 expensesList.map((expense, index) => (
-                  <div key={`${expense.category}-${index}`} className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-4 h-4 rounded-full ${expense.color}`}></div>
-                        <span className="text-sm font-medium text-gray-900">{expense.category}</span>
+                  <div key={`${expense.category}-${index}`} className="space-y-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-4 h-4 rounded-full ${expense.color}`}></div>
+                          <span className="text-sm font-medium text-gray-900">{expense.category}</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-gray-900">{show(expense.amount)}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">{show(expense.amount)}</p>
+                      <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div 
+                          className="h-2 rounded-full bg-blue-500 transition-all duration-500"
+                          style={{ width: `${Math.min(expense.percentage, 100)}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>{expense.percentage}% of total</span>
+                        <span>{show(expense.amount)}</span>
                       </div>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full bg-blue-500 transition-all duration-500"
-                        style={{ width: `${Math.min(expense.percentage, 100)}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>{expense.percentage}% of total</span>
-                      <span>{show(expense.amount)}</span>
+                    
+                    {/* Transaction/Expense items */}
+                    <div className="ml-6 space-y-2">
+                      {expense.items.map((item, itemIdx) => (
+                        <div key={`${expense.category}-item-${itemIdx}`} 
+                             className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600 truncate max-w-[180px]">
+                            {item.description || 'Expense'}
+                            <span className="ml-2 text-xs text-gray-400">
+                              {item.date.toLocaleDateString()}
+                            </span>
+                          </span>
+                          <span className="font-medium">
+                            {show(item.amount)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))
