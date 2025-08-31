@@ -1,9 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { API_ENDPOINTS } from '../config/api';
-import { Chart, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Chart, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, DoughnutController } from 'chart.js';
 
 // Register Chart.js components
-Chart.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+Chart.register(
+  ArcElement,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  DoughnutController
+);
 
 const FinancesOverview = () => {
   const [activeTab, setActiveTab] = useState('overview');
