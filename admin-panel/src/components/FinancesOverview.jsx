@@ -39,6 +39,57 @@ const FinancesOverview = () => {
 
   const financialData = overview.summary;
 
+  // Get combined monthly expenses and transactions
+  const getCombinedMonthlyData = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const combined = [];
+
+    // Process expenses
+    if (overview.expenses && overview.expenses.length) {
+      overview.expenses.forEach(expense => {
+        const expenseDate = new Date(expense.date || expense.timestamp);
+        if (expenseDate.getMonth() === currentMonth && 
+            expenseDate.getFullYear() === currentYear) {
+          combined.push({
+            ...expense,
+            type: 'expense',
+            amount: expense.amount || { original: 0, usd: 0 },
+            date: expenseDate
+          });
+        }
+      });
+    }
+
+    // Process transactions (only expense type)
+    if (overview.transactions && overview.transactions.length) {
+      overview.transactions.forEach(transaction => {
+        if (transaction.type === 'expense') {
+          const txnDate = new Date(transaction.date || transaction.timestamp);
+          if (txnDate.getMonth() === currentMonth && 
+              txnDate.getFullYear() === currentYear) {
+            combined.push({
+              ...transaction,
+              type: 'transaction',
+              amount: {
+                original: transaction.amount?.original || transaction.amount?.inr || 0,
+                usd: transaction.amount?.usd || 0
+              },
+              date: txnDate,
+              category: transaction.category || 'Uncategorized',
+              description: transaction.description || 'No description'
+            });
+          }
+        }
+      });
+    }
+
+    return combined;
+  };
+
+  const monthlyData = getCombinedMonthlyData();
+  
   // Prepare chart data
   const prepareChartData = (expenses) => {
     const categories = {};
@@ -118,56 +169,7 @@ const FinancesOverview = () => {
     };
   }, [monthlyData]);
 
-  // Get combined monthly expenses and transactions
-  const getCombinedMonthlyData = () => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    const combined = [];
 
-    // Process expenses
-    if (overview.expenses && overview.expenses.length) {
-      overview.expenses.forEach(expense => {
-        const expenseDate = new Date(expense.date || expense.timestamp);
-        if (expenseDate.getMonth() === currentMonth && 
-            expenseDate.getFullYear() === currentYear) {
-          combined.push({
-            ...expense,
-            type: 'expense',
-            amount: expense.amount || { original: 0, usd: 0 },
-            date: expenseDate
-          });
-        }
-      });
-    }
-
-    // Process transactions (only expense type)
-    if (overview.transactions && overview.transactions.length) {
-      overview.transactions.forEach(transaction => {
-        if (transaction.type === 'expense') {
-          const txnDate = new Date(transaction.date || transaction.timestamp);
-          if (txnDate.getMonth() === currentMonth && 
-              txnDate.getFullYear() === currentYear) {
-            combined.push({
-              ...transaction,
-              type: 'transaction',
-              amount: {
-                original: transaction.amount?.original || transaction.amount?.inr || 0,
-                usd: transaction.amount?.usd || 0
-              },
-              date: txnDate,
-              category: transaction.category || 'Uncategorized',
-              description: transaction.description || 'No description'
-            });
-          }
-        }
-      });
-    }
-
-    return combined;
-  };
-
-  const monthlyData = getCombinedMonthlyData();
   
   // Calculate total expenses for current month
   const currentMonthTotal = monthlyData.reduce((sum, item) => {
