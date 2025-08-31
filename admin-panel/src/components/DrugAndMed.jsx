@@ -14,8 +14,19 @@ const DrugAndMed = () => {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ name: '', dosage: '', frequency: '', startDate: '', endDate: '', notes: '' })
+  
+  // Therapy state
+  const [therapyQuery, setTherapyQuery] = useState('')
+  const [therapyType, setTherapyType] = useState('')
+  const [therapyLoading, setTherapyLoading] = useState(false)
+  const [therapyError, setTherapyError] = useState('')
+  const [therapySessions, setTherapySessions] = useState([])
+  const [showTherapyForm, setShowTherapyForm] = useState(false)
+  const [editingTherapyId, setEditingTherapyId] = useState(null)
+  const [therapyForm, setTherapyForm] = useState({ therapist: '', sessionDate: '', type: 'individual', notes: '', progress: 0 })
 
   const API_BASE = API_ENDPOINTS.MEDICATIONS;
+  const THERAPY_API_BASE = API_ENDPOINTS.THERAPY;
   const authHeaders = () => ({ 'Content-Type': 'application/json' })
 
   const loadMeds = async () => {
@@ -36,8 +47,27 @@ const DrugAndMed = () => {
     }
   }
 
+  const loadTherapySessions = async () => {
+    try {
+      setTherapyLoading(true)
+      setTherapyError('')
+      const params = new URLSearchParams()
+      if (therapyQuery) params.append('q', therapyQuery)
+      if (therapyType) params.append('type', therapyType)
+      const res = await fetch(`${THERAPY_API_BASE}?${params.toString()}`, { headers: authHeaders() })
+      if (!res.ok) throw new Error('Failed to fetch therapy sessions')
+      const data = await res.json()
+      setTherapySessions(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setTherapyError('Could not load therapy sessions')
+    } finally {
+      setTherapyLoading(false)
+    }
+  }
+
   useEffect(() => {
     loadMeds()
+    loadTherapySessions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -81,6 +111,46 @@ const DrugAndMed = () => {
     }
   }
 
+  const onSubmitTherapy = async () => {
+    if (!therapyForm.therapist || !therapyForm.sessionDate || !therapyForm.type) { 
+      alert('Fill required fields: therapist, session date, and type'); 
+      return 
+    }
+    try {
+      setTherapyLoading(true)
+      const body = {
+        therapist: therapyForm.therapist,
+        sessionDate: therapyForm.sessionDate,
+        type: therapyForm.type,
+        notes: therapyForm.notes,
+        progress: Number(therapyForm.progress)
+      }
+      let res
+      if (editingTherapyId) {
+        res = await fetch(`${THERAPY_API_BASE}/${editingTherapyId}`, { 
+          method: 'PUT', 
+          headers: authHeaders(), 
+          body: JSON.stringify(body) 
+        })
+      } else {
+        res = await fetch(`${THERAPY_API_BASE}`, { 
+          method: 'POST', 
+          headers: authHeaders(), 
+          body: JSON.stringify(body) 
+        })
+      }
+      if (!res.ok) throw new Error('Therapy session request failed')
+      setTherapyForm({ therapist: '', sessionDate: '', type: 'individual', notes: '', progress: 0 })
+      setEditingTherapyId(null)
+      setShowTherapyForm(false)
+      await loadTherapySessions()
+    } catch (e) {
+      setTherapyError('Save failed')
+    } finally {
+      setTherapyLoading(false)
+    }
+  }
+
   const onDelete = async (id) => {
     if (!confirm('Delete this medication?')) return
     try {
@@ -88,6 +158,16 @@ const DrugAndMed = () => {
       await loadMeds()
     } catch (e) {
       setError('Delete failed')
+    }
+  }
+
+  const onDeleteTherapy = async (id) => {
+    if (!confirm('Delete this therapy session?')) return
+    try {
+      await fetch(`${THERAPY_API_BASE}/${id}`, { method: 'DELETE', headers: authHeaders() })
+      await loadTherapySessions()
+    } catch (e) {
+      setTherapyError('Delete failed')
     }
   }
 
@@ -225,6 +305,191 @@ const DrugAndMed = () => {
             {filteredMeds.length === 0 && (
               <tr>
                 <td className='p-3 text-gray-500' colSpan={8}>No medications found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {/* Therapy Sessions CRUD */}
+    <div className='w-full my-10'>
+      <div className='flex justify-between items-center mb-4'>
+        <h2 className='text-2xl font-semibold text-blue-900'>Therapy Sessions</h2>
+        <button className='btn-primary' onClick={()=>{ 
+          setShowTherapyForm(true); 
+          setEditingTherapyId(null); 
+          setTherapyForm({ therapist: '', sessionDate: '', type: 'individual', notes: '', progress: 0 }) 
+        }}>Add Session</button>
+      </div>
+
+      {/* Therapy Search & Filter */}
+      <div className='card p-4 mb-6'>
+        <div className='grid grid-cols-1 md:grid-cols-4 gap-3 mb-3'>
+          <input 
+            className='input-field' 
+            placeholder='Search by therapist name' 
+            value={therapyQuery} 
+            onChange={(e)=>setTherapyQuery(e.target.value)} 
+          />
+          <select 
+            className='input-field' 
+            value={therapyType} 
+            onChange={(e)=>setTherapyType(e.target.value)}
+          >
+            <option value="">All Types</option>
+            <option value="individual">Individual</option>
+            <option value="group">Group</option>
+            <option value="online">Online</option>
+            <option value="couples">Couples</option>
+          </select>
+          <button 
+            className='btn-primary' 
+            onClick={loadTherapySessions}
+          >
+            Search
+          </button>
+          <button 
+            className='btn-secondary' 
+            onClick={()=>{ 
+              setTherapyQuery(''); 
+              setTherapyType(''); 
+              loadTherapySessions(); 
+            }}
+          >
+            Clear
+          </button>
+        </div>
+        {therapyError && <p className='text-red-600 mt-2'>{therapyError}</p>}
+        {therapyLoading && <p className='text-gray-500 mt-2'>Loading therapy sessions…</p>}
+      </div>
+
+      {showTherapyForm && (
+        <div className='card p-4 mb-6'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+            <input 
+              className='input-field' 
+              placeholder='Therapist Name' 
+              value={therapyForm.therapist} 
+              onChange={(e)=>setTherapyForm({ ...therapyForm, therapist: e.target.value })} 
+            />
+            <input 
+              className='input-field' 
+              type='date' 
+              placeholder='Session Date' 
+              value={therapyForm.sessionDate} 
+              onChange={(e)=>setTherapyForm({ ...therapyForm, sessionDate: e.target.value })} 
+            />
+            <select 
+              className='input-field' 
+              value={therapyForm.type} 
+              onChange={(e)=>setTherapyForm({ ...therapyForm, type: e.target.value })}
+            >
+              <option value="individual">Individual</option>
+              <option value="group">Group</option>
+              <option value="online">Online</option>
+              <option value="couples">Couples</option>
+            </select>
+            <input 
+              className='input-field' 
+              type='number' 
+              min='0' 
+              max='100' 
+              placeholder='Progress (0-100)' 
+              value={therapyForm.progress} 
+              onChange={(e)=>setTherapyForm({ ...therapyForm, progress: e.target.value })} 
+            />
+            <input 
+              className='input-field md:col-span-2' 
+              placeholder='Session Notes' 
+              value={therapyForm.notes} 
+              onChange={(e)=>setTherapyForm({ ...therapyForm, notes: e.target.value })} 
+            />
+          </div>
+          <div className='flex gap-2 mt-3'>
+            <button className='btn-primary' onClick={onSubmitTherapy}>
+              {editingTherapyId ? 'Update' : 'Save'}
+            </button>
+            <button className='btn-secondary' onClick={()=>{ 
+              setShowTherapyForm(false); 
+              setEditingTherapyId(null) 
+            }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className='overflow-x-auto'>
+        <table className='min-w-full text-left border border-gray-200'>
+          <thead className='bg-gray-50'>
+            <tr>
+              <th className='p-2'>Therapist</th>
+              <th className='p-2'>Date</th>
+              <th className='p-2'>Type</th>
+              <th className='p-2'>Progress</th>
+              <th className='p-2'>Notes</th>
+              <th className='p-2'>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {therapySessions.map((session, idx) => (
+              <tr key={session._id || `therapy-${session.therapist}-${session.sessionDate}-${idx}`} className='border-t'>
+                <td className='p-2'>{session.therapist}</td>
+                <td className='p-2'>{session.sessionDate ? String(session.sessionDate).slice(0,10) : '-'}</td>
+                <td className='p-2'>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    session.type === 'individual' ? 'bg-blue-100 text-blue-700' :
+                    session.type === 'group' ? 'bg-green-100 text-green-700' :
+                    session.type === 'online' ? 'bg-purple-100 text-purple-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {session.type}
+                  </span>
+                </td>
+                <td className='p-2'>
+                  <div className='flex items-center gap-2'>
+                    <div className='w-16 bg-gray-200 rounded-full h-2'>
+                      <div 
+                        className='bg-blue-500 h-2 rounded-full transition-all duration-300'
+                        style={{ width: `${Math.min(session.progress || 0, 100)}%` }}
+                      ></div>
+                    </div>
+                    <span className='text-sm text-gray-600'>{session.progress || 0}%</span>
+                  </div>
+                </td>
+                <td className='p-2 max-w-xs truncate' title={session.notes || ''}>
+                  {session.notes || '-'}
+                </td>
+                <td className='p-2'>
+                  <div className='flex gap-2'>
+                    <button 
+                      className='btn-secondary' 
+                      onClick={()=>{ 
+                        setEditingTherapyId(session._id); 
+                        setShowTherapyForm(true); 
+                        setTherapyForm({ 
+                          therapist: session.therapist || '', 
+                          sessionDate: (session.sessionDate || '').slice(0,10), 
+                          type: session.type || 'individual', 
+                          notes: session.notes || '', 
+                          progress: session.progress || 0 
+                        }) 
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      className='px-3 py-1 bg-red-600 text-white rounded' 
+                      onClick={()=>onDeleteTherapy(session._id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {therapySessions.length === 0 && (
+              <tr>
+                <td className='p-3 text-gray-500' colSpan={6}>No therapy sessions found.</td>
               </tr>
             )}
           </tbody>
