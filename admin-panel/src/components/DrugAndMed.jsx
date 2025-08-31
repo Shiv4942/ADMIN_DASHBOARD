@@ -315,7 +315,6 @@ const DrugAndMed = () => {
                   <div className='flex gap-2'>
                     <button className='btn-secondary' onClick={()=>{ setEditingId(m._id); setShowForm(true); setForm({ name: m.name || '', dosage: m.dosage || '', frequency: m.frequency || '', startDate: (m.startDate || '').slice(0,10), endDate: (m.endDate || '').slice(0,10), notes: m.notes || '' }) }}>Edit</button>
                     <button className='px-3 py-1 bg-red-600 text-white rounded' onClick={()=>onDelete(m._id)}>Delete</button>
-// ... (rest of the code remains the same)
                   </div>
                 </td>
               </tr>
