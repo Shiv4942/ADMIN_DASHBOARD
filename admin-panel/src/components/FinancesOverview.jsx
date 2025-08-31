@@ -49,25 +49,25 @@ const FinancesOverview = () => {
   const fmtUSD = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
   const fmtINR = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
   
-  // Show original amount by default (no conversion)
+  // Show INR as primary currency (input amounts are treated as INR)
   const show = (amountObj) => {
     if (!amountObj) return '-';
     // If amountObj has 'original' property, use that
     if (amountObj.original !== undefined) {
       if (showBothCurrencies) {
-        return `${fmtUSD(amountObj.original)} / ${fmtINR(amountObj.inr)}`;
+        return `${fmtINR(amountObj.original)} / ${fmtUSD(amountObj.usd)}`;
       }
-      return fmtUSD(amountObj.original);
+      return fmtINR(amountObj.original);
     }
     // Fallback to existing logic for backward compatibility
     return fmtINR(amountObj.inr);
   };
   
-  // Show both USD and INR for reference
+  // Show both INR and USD for reference
   const showBoth = (amountObj) => {
     if (!amountObj) return '-';
     if (amountObj.original !== undefined) {
-      return `${fmtUSD(amountObj.original)} / ${fmtINR(amountObj.inr)}`;
+      return `${fmtINR(amountObj.original)} / ${fmtUSD(amountObj.usd)}`;
     }
     return fmtINR(amountObj.inr);
   };
@@ -91,7 +91,7 @@ const FinancesOverview = () => {
           onClick={() => setShowBothCurrencies(!showBothCurrencies)}
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
-          {showBothCurrencies ? 'Show USD Only' : 'Show Both Currencies'}
+          {showBothCurrencies ? 'Show INR Only' : 'Show Both Currencies'}
         </button>
       </div>
       

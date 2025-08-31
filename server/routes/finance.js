@@ -6,10 +6,10 @@ const router = Router();
 // Simple static conversion; option to override via env
 const USD_TO_INR = Number(process.env.USD_TO_INR || 83.25);
 
-// Convert USD to INR for display purposes only
+// Convert INR to USD for display purposes (input amounts are treated as INR)
 const convertForDisplay = (amount) => ({ 
-  usd: amount, 
-  inr: Math.round(amount * USD_TO_INR * 100) / 100 
+  inr: amount, // Input amount is treated as INR
+  usd: Math.round(amount / USD_TO_INR * 100) / 100 // Convert INR to USD
 });
 
 // For summary calculations, we'll use the original amounts
