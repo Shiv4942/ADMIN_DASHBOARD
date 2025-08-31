@@ -49,27 +49,31 @@ const FinancesOverview = () => {
   const fmtUSD = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
   const fmtINR = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
   
-  // Show INR as primary currency (input amounts are treated as INR)
+  // Show amount in appropriate currency/currencies based on showBothCurrencies state
   const show = (amountObj) => {
     if (!amountObj) return '-';
-    // If amountObj has 'original' property, use that
-    if (amountObj.original !== undefined) {
-      if (showBothCurrencies) {
-        return `${fmtINR(amountObj.original)} / ${fmtUSD(amountObj.usd)}`;
-      }
-      return fmtINR(amountObj.original);
+    
+    // Handle different amount object structures
+    const inrAmount = amountObj.original !== undefined ? amountObj.original : 
+                     amountObj.inr !== undefined ? amountObj.inr : 0;
+    const usdAmount = amountObj.usd !== undefined ? amountObj.usd : 
+                     amountObj.original !== undefined ? (amountObj.original / 83.25).toFixed(2) : 0;
+    
+    if (showBothCurrencies) {
+      return `${fmtINR(inrAmount)} / ${fmtUSD(usdAmount)}`;
     }
-    // Fallback to existing logic for backward compatibility
-    return fmtINR(amountObj.inr);
+    return fmtINR(inrAmount);
   };
   
-  // Show both INR and USD for reference
-  const showBoth = (amountObj) => {
-    if (!amountObj) return '-';
-    if (amountObj.original !== undefined) {
-      return `${fmtINR(amountObj.original)} / ${fmtUSD(amountObj.usd)}`;
-    }
-    return fmtINR(amountObj.inr);
+  // Helper function to calculate net amount in both currencies
+  const calculateNetAmount = (income, expense) => {
+    if (!income || !expense) return { inr: 0, usd: 0 };
+    
+    const inrNet = (income.original || income.inr || 0) - (expense.original || expense.inr || 0);
+    const usdNet = (income.usd || (income.original / 83.25) || 0) - 
+                  (expense.usd || (expense.original / 83.25) || 0);
+    
+    return { inr: inrNet, usd: usdNet };
   };
 
   const renderOverview = () => {
@@ -131,7 +135,9 @@ const FinancesOverview = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Net Savings</p>
-              <p className="text-sm font-medium text-blue-700">{financialData ? fmtINR(financialData.monthlyIncome.inr - financialData.monthlyExpenses.inr) : '-'}</p>
+              <p className="text-sm font-medium text-blue-700">
+                {financialData ? show(calculateNetAmount(financialData.monthlyIncome, financialData.monthlyExpenses)) : '-'}
+              </p>
             </div>
             <div className="text-3xl">💎</div>
           </div>
