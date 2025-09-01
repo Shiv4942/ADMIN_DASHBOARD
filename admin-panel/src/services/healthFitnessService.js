@@ -3,130 +3,170 @@ import { API_BASE_URL } from '../config/api';
 
 const API_URL = `${API_BASE_URL}/health`;
 
-// Helper function to get auth header with token
-const authHeader = () => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  if (user && user.token) {
-    return { 'x-auth-token': user.token };
-  } else {
-    return {};
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
   }
-};
+});
 
 // Workout API calls
 export const workoutService = {
   createWorkout: async (workoutData) => {
-    const response = await axios.post(`${API_URL}/workouts`, workoutData, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.post('/workouts', workoutData);
+      return response.data;
+    } catch (error) {
+      console.error('Create workout error:', error);
+      throw error;
+    }
   },
 
   getWorkouts: async () => {
-    const response = await axios.get(`${API_URL}/workouts`, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.get('/workouts');
+      return response.data;
+    } catch (error) {
+      console.error('Get workouts error:', error);
+      throw error;
+    }
   },
 
   getWorkoutStats: async () => {
-    const response = await axios.get(`${API_URL}/workouts/stats`, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.get('/workouts/stats');
+      return response.data;
+    } catch (error) {
+      console.error('Get workout stats error:', error);
+      throw error;
+    }
   },
 
   updateWorkout: async (id, workoutData) => {
-    const response = await axios.put(`${API_URL}/workouts/${id}`, workoutData, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.put(`/workouts/${id}`, workoutData);
+      return response.data;
+    } catch (error) {
+      console.error('Update workout error:', error);
+      throw error;
+    }
   },
 
   deleteWorkout: async (id) => {
-    const response = await axios.delete(`${API_URL}/workouts/${id}`, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.delete(`/workouts/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Delete workout error:', error);
+      throw error;
+    }
   }
 };
 
 // Goal API calls
 export const goalService = {
   createGoal: async (goalData) => {
-    const response = await axios.post(`${API_URL}/goals`, goalData, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.post('/goals', goalData);
+      return response.data;
+    } catch (error) {
+      console.error('Create goal error:', error);
+      throw error;
+    }
   },
 
   getGoals: async (params = {}) => {
-    const response = await axios.get(`${API_URL}/goals`, {
-      params,
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.get('/goals', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Get goals error:', error);
+      throw error;
+    }
   },
 
   getGoalStats: async () => {
-    const response = await axios.get(`${API_URL}/goals/stats`, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.get('/goals/stats');
+      return response.data;
+    } catch (error) {
+      console.error('Get goal stats error:', error);
+      throw error;
+    }
   },
 
   updateGoal: async (id, goalData) => {
-    const response = await axios.put(`${API_URL}/goals/${id}`, goalData, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.put(`/goals/${id}`, goalData);
+      return response.data;
+    } catch (error) {
+      console.error('Update goal error:', error);
+      throw error;
+    }
   },
 
   deleteGoal: async (id) => {
-    const response = await axios.delete(`${API_URL}/goals/${id}`, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.delete(`/goals/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Delete goal error:', error);
+      throw error;
+    }
   }
 };
 
 // Diet Log API calls
 export const dietLogService = {
   createDietLog: async (dietLogData) => {
-    const response = await axios.post(`${API_URL}/diet-logs`, dietLogData, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.post('/diet-logs', dietLogData);
+      return response.data;
+    } catch (error) {
+      console.error('Create diet log error:', error);
+      throw error;
+    }
   },
 
   getDietLogs: async (params = {}) => {
-    const response = await axios.get(`${API_URL}/diet-logs`, {
-      params,
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.get('/diet-logs', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Get diet logs error:', error);
+      throw error;
+    }
   },
 
   getNutritionStats: async (params = {}) => {
-    const response = await axios.get(`${API_URL}/diet-logs/stats`, {
-      params,
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.get('/diet-logs/stats', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Get nutrition stats error:', error);
+      throw error;
+    }
   },
 
   updateDietLog: async (id, dietLogData) => {
-    const response = await axios.put(`${API_URL}/diet-logs/${id}`, dietLogData, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.put(`/diet-logs/${id}`, dietLogData);
+      return response.data;
+    } catch (error) {
+      console.error('Update diet log error:', error);
+      throw error;
+    }
   },
 
   deleteDietLog: async (id) => {
-    const response = await axios.delete(`${API_URL}/diet-logs/${id}`, {
-      headers: authHeader()
-    });
-    return response.data;
+    try {
+      const response = await api.delete(`/diet-logs/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Delete diet log error:', error);
+      throw error;
+    }
   }
 };
 

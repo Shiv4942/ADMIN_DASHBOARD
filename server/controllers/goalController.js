@@ -3,7 +3,6 @@ import asyncHandler from 'express-async-handler';
 
 // @desc    Create a new goal
 // @route   POST /api/goals
-// @access  Private
 export const createGoal = asyncHandler(async (req, res) => {
   const { title, target, current, deadline, category } = req.body;
   
@@ -13,7 +12,6 @@ export const createGoal = asyncHandler(async (req, res) => {
   }
 
   const goal = await Goal.create({
-    userId: req.user._id,
     title,
     target,
     current: current || '0',
@@ -24,12 +22,11 @@ export const createGoal = asyncHandler(async (req, res) => {
   res.status(201).json(goal);
 });
 
-// @desc    Get all goals for a user
+// @desc    Get all goals
 // @route   GET /api/goals
-// @access  Private
 export const getGoals = asyncHandler(async (req, res) => {
   const { category, completed } = req.query;
-  const query = { userId: req.user._id };
+  const query = {};
   
   if (category) {
     query.category = category;
@@ -45,12 +42,8 @@ export const getGoals = asyncHandler(async (req, res) => {
 
 // @desc    Get goal by ID
 // @route   GET /api/goals/:id
-// @access  Private
 export const getGoalById = asyncHandler(async (req, res) => {
-  const goal = await Goal.findOne({
-    _id: req.params.id,
-    userId: req.user._id
-  });
+  const goal = await Goal.findById(req.params.id);
 
   if (!goal) {
     res.status(404);
@@ -62,12 +55,8 @@ export const getGoalById = asyncHandler(async (req, res) => {
 
 // @desc    Update a goal
 // @route   PUT /api/goals/:id
-// @access  Private
 export const updateGoal = asyncHandler(async (req, res) => {
-  const goal = await Goal.findOne({
-    _id: req.params.id,
-    userId: req.user._id
-  });
+  const goal = await Goal.findById(req.params.id);
 
   if (!goal) {
     res.status(404);
@@ -89,12 +78,8 @@ export const updateGoal = asyncHandler(async (req, res) => {
 
 // @desc    Delete a goal
 // @route   DELETE /api/goals/:id
-// @access  Private
 export const deleteGoal = asyncHandler(async (req, res) => {
-  const goal = await Goal.findOne({
-    _id: req.params.id,
-    userId: req.user._id
-  });
+  const goal = await Goal.findById(req.params.id);
 
   if (!goal) {
     res.status(404);
@@ -107,11 +92,10 @@ export const deleteGoal = asyncHandler(async (req, res) => {
 
 // @desc    Get goals statistics
 // @route   GET /api/goals/stats
-// @access  Private
 export const getGoalStats = asyncHandler(async (req, res) => {
   const stats = await Goal.aggregate([
     {
-      $match: { userId: req.user._id }
+      $match: {}
     },
     {
       $group: {
