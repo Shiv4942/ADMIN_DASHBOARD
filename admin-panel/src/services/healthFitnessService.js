@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
-const API_URL = 'http://localhost:5000/api/health';
+const API_URL = `${API_BASE_URL}/health`;
 
 // Helper function to get auth header with token
 const authHeader = () => {
