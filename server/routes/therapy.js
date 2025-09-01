@@ -1,10 +1,7 @@
 import { Router } from 'express';
 import Therapy from '../models/Therapy.js';
-import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
-
-router.use(requireAuth);
 
 router.post('/', async (req, res) => {
   try {
@@ -21,7 +18,7 @@ router.post('/', async (req, res) => {
       type: type.trim(),
       notes: notes?.trim() || '',
       progress: progress || 0,
-      userId: req.user.id 
+      userId: 'public' 
     });
     
     res.status(201).json(session);

@@ -1,10 +1,7 @@
 import { Router } from 'express';
 import Medication from '../models/Medication.js';
-import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
-
-router.use(requireAuth);
 
 router.post('/', async (req, res) => {
   try {
@@ -22,7 +19,7 @@ router.post('/', async (req, res) => {
       startDate: startDate || new Date(),
       endDate: endDate || null,
       notes: notes?.trim() || '',
-      userId: req.user.id 
+      userId: 'public' 
     });
     
     res.status(201).json(med);
