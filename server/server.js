@@ -6,6 +6,7 @@ import financeRoutes from './routes/finance.js';
 import dashboardRoutes from './routes/dashboard.js';
 import medicationRoutes from './routes/medications.js';
 import therapyRoutes from './routes/therapy.js';
+import healthFitnessRoutes from './routes/healthFitness.js';
 import mongoose from 'mongoose'; // Added for health check
 
 dotenv.config();
@@ -21,9 +22,11 @@ app.use(cors({
     const allowedOrigins = [
       'http://localhost:5173', // Development
       'http://localhost:3000', // Alternative dev port
+      'http://localhost:5174', // Vite dev server
       'https://admin-dashboard-cza3batbl-shiv4942s-projects.vercel.app', // Vercel frontend
       'https://admin-dashboard-git-master-shiv4942s-projects.vercel.app', // Vercel frontend
-      'https://admin-dashboard-qdgo.onrender.com' // Your backend domain
+      'https://admin-dashboard-qdgo.onrender.com', // Your backend domain
+      'http://127.0.0.1:5173' // Localhost with IP
     ];
     
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -62,19 +65,27 @@ app.use(express.json());
 app.use('/api/finance', financeRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/medications', medicationRoutes);
-app.use('/api/therapy', therapyRoutes);
+app.use('/api/therapies', therapyRoutes);
+app.use('/api/health', healthFitnessRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  const health = {
-    status: 'OK',
+  res.status(200).json({
+    status: 'ok',
+    mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  };
-  
-  res.status(200).json(health);
+    routes: [
+      '/api/health/workouts - GET/POST',
+      '/api/health/workouts/stats - GET',
+      '/api/health/workouts/:id - GET/PUT/DELETE',
+      '/api/health/goals - GET/POST',
+      '/api/health/goals/stats - GET',
+      '/api/health/goals/:id - GET/PUT/DELETE',
+      '/api/health/diet-logs - GET/POST',
+      '/api/health/diet-logs/stats - GET',
+      '/api/health/diet-logs/:id - GET/PUT/DELETE'
+    ]
+  });
 });
 
 const start = async () => {
