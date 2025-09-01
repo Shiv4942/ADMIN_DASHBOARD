@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { protect } from '../middleware/auth.js';
 import {
   createWorkout,
   getWorkouts,
@@ -29,8 +28,6 @@ import {
 
 const router = Router();
 
-// Apply protect middleware to all routes
-router.use(protect);
 
 // Workout routes
 router.route('/workouts')
