@@ -31,7 +31,7 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { q, type, from, to } = req.query;
-    const filter = { userId: req.user.id };
+    const filter = {};
     
     if (q) filter.therapist = { $regex: q, $options: 'i' };
     if (type) filter.type = type;

@@ -32,7 +32,7 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { q, active } = req.query;
-    const filter = { userId: req.user.id };
+    const filter = {};
     
     if (q) {
       filter.name = { $regex: q, $options: 'i' };
