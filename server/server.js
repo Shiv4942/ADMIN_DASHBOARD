@@ -65,7 +65,15 @@ app.use(express.json());
 app.use('/api/finance', financeRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/medications', medicationRoutes);
+
+// Support both /api/therapy and /api/therapies for backward compatibility
 app.use('/api/therapies', therapyRoutes);
+app.use('/api/therapy', (req, res, next) => {
+  // Redirect /api/therapy/* to /api/therapies/*
+  const newPath = req.path.replace(/^\/api\/therapy/, '/api/therapies');
+  return res.redirect(307, newPath);
+});
+
 app.use('/api/health', healthFitnessRoutes);
 
 // Health check endpoint

@@ -63,7 +63,7 @@ router.put('/:id', async (req, res) => {
     }
     
     const updated = await Medication.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id }, 
+      { _id: req.params.id }, // Removed userId check since we're not using authentication yet
       { 
         name: name.trim(), 
         dosage: dosage.trim(), 
@@ -91,7 +91,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Medication.findOneAndDelete(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id }, // Removed userId check since we're not using authentication yet
       { maxTimeMS: 15000 }
     );
     

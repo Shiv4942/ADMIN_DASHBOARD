@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const dietLogSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
+    default: 'public',
     required: true
   },
   meal: {

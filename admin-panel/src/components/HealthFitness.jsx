@@ -38,6 +38,18 @@ const HealthFitness = () => {
     fat: 0,
     notes: ''
   });
+  
+  const [showMealPlanForm, setShowMealPlanForm] = useState(false);
+  const [mealPlan, setMealPlan] = useState({
+    name: '',
+    description: '',
+    meals: [
+      { meal: 'Breakfast', food: '', calories: 0, protein: 0, carbs: 0, fat: 0 },
+      { meal: 'Lunch', food: '', calories: 0, protein: 0, carbs: 0, fat: 0 },
+      { meal: 'Dinner', food: '', calories: 0, protein: 0, carbs: 0, fat: 0 },
+      { meal: 'Snacks', food: '', calories: 0, protein: 0, carbs: 0, fat: 0 }
+    ]
+  });
 
   // Fetch data when tab changes
   useEffect(() => {
@@ -373,7 +385,7 @@ const HealthFitness = () => {
                   </span>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-600">
-                      {goal.current.toFixed(1)} / {goal.target}
+                      {Number(goal.current).toFixed(1)} / {goal.target}
                     </span>
                   </div>
                 </div>
@@ -392,7 +404,7 @@ const HealthFitness = () => {
                       className="flex-1"
                     />
                     <span className="text-sm text-gray-600 w-16 text-right">
-                      {goal.current.toFixed(1)}
+                      {Number(goal.current).toFixed(1)}
                     </span>
                   </div>
                 </div>
@@ -410,7 +422,6 @@ const HealthFitness = () => {
       setError('Please fill in all required fields');
       return;
     }
-    
     try {
       const dietLog = await dietLogService.createDietLog({
         ...newMeal,
@@ -435,6 +446,108 @@ const HealthFitness = () => {
     } catch (err) {
       setError(err.message || 'Failed to log meal');
     }
+  };
+
+  const handleAddMeal = async () => {
+    if (!newMeal.food) {
+      setError('Please enter food name');
+      return;
+    }
+    
+    try {
+      const mealLog = await dietLogService.createDietLog({
+        ...newMeal,
+        date: new Date().toISOString()
+      });
+      setDietLogs([mealLog, ...dietLogs]);
+      setNewMeal({ 
+        meal: 'Breakfast', 
+        food: '', 
+        calories: 0, 
+        protein: 0, 
+        carbs: 0, 
+        fat: 0,
+        notes: ''
+      });
+      setShowMealForm(false);
+      setError(null);
+    } catch (err) {
+      setError(err.message || 'Failed to add meal');
+    }
+  };
+  
+  const handleAddMealPlan = async () => {
+    try {
+      // Filter out empty meals
+      const validMeals = mealPlan.meals.filter(meal => meal.food.trim() !== '');
+      
+      if (validMeals.length === 0) {
+        setError('Please add at least one meal to the plan');
+        return;
+      }
+      
+      // Add all meals from the plan to the diet logs
+      const newMealLogs = [];
+      
+      for (const meal of validMeals) {
+        try {
+          const response = await dietLogService.createDietLog({
+            ...meal,
+            date: new Date().toISOString(),
+            notes: mealPlan.name ? `Part of meal plan: ${mealPlan.name}` : ''
+          });
+          newMealLogs.push(response);
+        } catch (err) {
+          console.error(`Error adding meal ${meal.meal}:`, err);
+          // Continue with other meals even if one fails
+        }
+      }
+      
+      if (newMealLogs.length > 0) {
+        // Update the diet logs state with the new meals
+        setDietLogs(prevLogs => [...newMealLogs, ...prevLogs]);
+        
+        // Show success message
+        setError(null);
+        
+        // Reset form
+        setMealPlan({
+          name: '',
+          description: '',
+          meals: [
+            { meal: 'Breakfast', food: '', calories: 0, protein: 0, carbs: 0, fat: 0 },
+            { meal: 'Lunch', food: '', calories: 0, protein: 0, carbs: 0, fat: 0 },
+            { meal: 'Dinner', food: '', calories: 0, protein: 0, carbs: 0, fat: 0 },
+            { meal: 'Snacks', food: '', calories: 0, protein: 0, carbs: 0, fat: 0 }
+          ]
+        });
+        
+        setShowMealPlanForm(false);
+      } else {
+        setError('Failed to add any meals. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error in handleAddMealPlan:', err);
+      setError(err.response?.data?.message || 'Failed to add meal plan');
+    }
+  };
+  
+  const updateMealInPlan = (index, field, value) => {
+    const updatedMeals = [...mealPlan.meals];
+    updatedMeals[index] = { ...updatedMeals[index], [field]: value };
+    setMealPlan({ ...mealPlan, meals: updatedMeals });
+  };
+  
+  const calculateTotals = () => {
+    return mealPlan.meals.reduce(
+      (totals, meal) => ({
+        calories: totals.calories + (Number(meal.calories) || 0),
+        protein: totals.protein + (Number(meal.protein) || 0),
+        carbs: totals.carbs + (Number(meal.carbs) || 0),
+        fat: totals.fat + (Number(meal.fat) || 0)
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
   };
 
   const handleDeleteDietLog = async (id) => {
@@ -465,100 +578,244 @@ const HealthFitness = () => {
 
   const renderDiet = () => (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Diet Logs</h3>
-        <button 
-          className="btn-primary" 
-          onClick={() => setShowMealForm(true)}
-          disabled={loading.dietLogs}
-        >
-          {loading.dietLogs ? 'Loading...' : 'Log Meal'}
-        </button>
+        <div className="space-x-2">
+          <button
+            onClick={() => setShowMealPlanForm(true)}
+            className="bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600 mr-2"
+          >
+            + Create Meal Plan
+          </button>
+          <button
+            onClick={() => setShowMealForm(true)}
+            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+          >
+            + Add Meal
+          </button>
+        </div>
       </div>
       
       {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
       
       {showMealForm && (
-        <div className="card p-4 mb-6">
-          <h4 className="font-semibold text-gray-900 mb-4">Add Meal</h4>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-            <select 
-              className="input-field" 
-              value={newMeal.meal}
-              onChange={(e) => setNewMeal({ ...newMeal, meal: e.target.value })}
-            >
-              <option value="Breakfast">Breakfast</option>
-              <option value="Lunch">Lunch</option>
-              <option value="Dinner">Dinner</option>
-              <option value="Snack">Snack</option>
-            </select>
-            
-            <input 
-              className="input-field md:col-span-2" 
-              placeholder="Food (e.g., Grilled Chicken Salad)" 
-              value={newMeal.food} 
-              onChange={(e) => setNewMeal({ ...newMeal, food: e.target.value })} 
-            />
-            
-            <input 
-              className="input-field" 
-              type="number" 
-              placeholder="Calories" 
-              value={newMeal.calories || ''} 
-              onChange={(e) => setNewMeal({ ...newMeal, calories: parseInt(e.target.value || '0', 10) })} 
-            />
-            
-            <div className="grid grid-cols-3 gap-2 md:col-span-6">
-              <input 
-                className="input-field" 
-                type="number" 
-                step="0.1"
-                placeholder="Protein (g)" 
-                value={newMeal.protein || ''} 
-                onChange={(e) => setNewMeal({ ...newMeal, protein: parseFloat(e.target.value) || 0 })} 
-              />
-              <input 
-                className="input-field" 
-                type="number" 
-                step="0.1"
-                placeholder="Carbs (g)" 
-                value={newMeal.carbs || ''} 
-                onChange={(e) => setNewMeal({ ...newMeal, carbs: parseFloat(e.target.value) || 0 })} 
-              />
-              <input 
-                className="input-field" 
-                type="number" 
-                step="0.1"
-                placeholder="Fat (g)" 
-                value={newMeal.fat || ''} 
-                onChange={(e) => setNewMeal({ ...newMeal, fat: parseFloat(e.target.value) || 0 })} 
-              />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h3 className="text-lg font-semibold mb-4">Add New Meal</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Meal Type</label>
+                <select
+                  value={newMeal.meal}
+                  onChange={(e) => setNewMeal({...newMeal, meal: e.target.value})}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="Breakfast">Breakfast</option>
+                  <option value="Lunch">Lunch</option>
+                  <option value="Dinner">Dinner</option>
+                  <option value="Snack">Snack</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Food Item</label>
+                <input
+                  type="text"
+                  value={newMeal.food}
+                  onChange={(e) => setNewMeal({...newMeal, food: e.target.value})}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="e.g., Chicken Salad"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Calories</label>
+                  <input
+                    type="number"
+                    value={newMeal.calories}
+                    onChange={(e) => setNewMeal({...newMeal, calories: e.target.value})}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                  <input
+                    type="number"
+                    value={newMeal.protein}
+                    onChange={(e) => setNewMeal({...newMeal, protein: e.target.value})}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
+                  <input
+                    type="number"
+                    value={newMeal.carbs}
+                    onChange={(e) => setNewMeal({...newMeal, carbs: e.target.value})}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
+                  <input
+                    type="number"
+                    value={newMeal.fat}
+                    onChange={(e) => setNewMeal({...newMeal, fat: e.target.value})}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Notes</label>
+                <textarea
+                  value={newMeal.notes}
+                  onChange={(e) => setNewMeal({...newMeal, notes: e.target.value})}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  rows="2"
+                  placeholder="Any additional notes..."
+                />
+              </div>
             </div>
-            
-            <div className="md:col-span-6">
-              <textarea
-                className="input-field w-full"
-                placeholder="Notes (optional)"
-                rows={2}
-                value={newMeal.notes || ''}
-                onChange={(e) => setNewMeal({ ...newMeal, notes: e.target.value })}
-              />
-            </div>
-            
-            <div className="flex space-x-2 md:col-span-6 pt-2">
-              <button 
-                className="btn-primary flex-1" 
-                onClick={handleCreateDietLog}
-                disabled={loading.dietLogs}
-              >
-                {loading.dietLogs ? 'Saving...' : 'Save Meal'}
-              </button>
-              <button 
-                className="btn-secondary" 
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
                 onClick={() => setShowMealForm(false)}
-                disabled={loading.dietLogs}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
               >
                 Cancel
+              </button>
+              <button
+                onClick={handleAddMeal}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600"
+              >
+                Add Meal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {showMealPlanForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
+            <h3 className="text-lg font-semibold mb-4">Create New Meal Plan</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Plan Name</label>
+                <input
+                  type="text"
+                  value={mealPlan.name}
+                  onChange={(e) => setMealPlan({...mealPlan, name: e.target.value})}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                  placeholder="e.g., High Protein Diet"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <textarea
+                  value={mealPlan.description}
+                  onChange={(e) => setMealPlan({...mealPlan, description: e.target.value})}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                  rows="2"
+                  placeholder="Brief description of your meal plan..."
+                />
+              </div>
+              
+              <div className="border-t pt-4">
+                <h4 className="text-md font-medium text-gray-800 mb-3">Meal Plan</h4>
+                
+                {mealPlan.meals.map((meal, index) => (
+                  <div key={index} className="mb-6 p-4 border rounded-lg">
+                    <h5 className="font-medium text-gray-800 mb-3">{meal.meal}</h5>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Food Items</label>
+                        <input
+                          type="text"
+                          value={meal.food}
+                          onChange={(e) => updateMealInPlan(index, 'food', e.target.value)}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                          placeholder="e.g., Grilled chicken with quinoa"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500">Calories</label>
+                          <input
+                            type="number"
+                            value={meal.calories}
+                            onChange={(e) => updateMealInPlan(index, 'calories', e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500">Protein (g)</label>
+                          <input
+                            type="number"
+                            value={meal.protein}
+                            onChange={(e) => updateMealInPlan(index, 'protein', e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500">Carbs (g)</label>
+                          <input
+                            type="number"
+                            value={meal.carbs}
+                            onChange={(e) => updateMealInPlan(index, 'carbs', e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500">Fat (g)</label>
+                          <input
+                            type="number"
+                            value={meal.fat}
+                            onChange={(e) => updateMealInPlan(index, 'fat', e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <h5 className="font-medium text-gray-800 mb-2">Daily Totals</h5>
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div>
+                      <span className="block text-sm font-medium text-gray-500">Calories</span>
+                      <span className="text-lg font-semibold">{calculateTotals().calories}</span>
+                    </div>
+                    <div>
+                      <span className="block text-sm font-medium text-gray-500">Protein (g)</span>
+                      <span className="text-lg font-semibold">{calculateTotals().protein}</span>
+                    </div>
+                    <div>
+                      <span className="block text-sm font-medium text-gray-500">Carbs (g)</span>
+                      <span className="text-lg font-semibold">{calculateTotals().carbs}</span>
+                    </div>
+                    <div>
+                      <span className="block text-sm font-medium text-gray-500">Fat (g)</span>
+                      <span className="text-lg font-semibold">{calculateTotals().fat}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowMealPlanForm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddMealPlan}
+                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700"
+              >
+                Save Meal Plan
               </button>
             </div>
           </div>
@@ -577,14 +834,19 @@ const HealthFitness = () => {
                 {format(new Date(date), 'EEEE, MMMM d, yyyy')}
               </h4>
               <div className="space-y-3">
-                {logs.map((log) => {
+                {logs.map((log, index) => {
                   const totalCalories = log.calories || 0;
                   const totalProtein = parseFloat(log.protein) || 0;
                   const totalCarbs = parseFloat(log.carbs) || 0;
                   const totalFat = parseFloat(log.fat) || 0;
                   
+                  // Create a truly unique key using date, meal type, _id, and timestamp
+                  const uniqueKey = log._id 
+                    ? `${date}-${log.meal}-${log._id}`
+                    : `${date}-${log.meal}-${index}-${Date.now()}`;
+                  
                   return (
-                    <div key={log._id} className="card p-4 hover:shadow-md transition-shadow">
+                    <div key={uniqueKey} className="card p-4 hover:shadow-md transition-shadow">
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="flex items-center">
@@ -671,10 +933,48 @@ const HealthFitness = () => {
     </div>
   );
 
+  // Main render function
+  const render = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Health &amp; Fitness</h1>
+        <p className="text-gray-600 mt-2">Track your workouts, goals, and nutrition.</p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === tab.id
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div className="mt-6">
+        {activeTab === 'workouts' && renderWorkouts()}
+        {activeTab === 'goals' && renderGoals()}
+        {activeTab === 'diet' && renderDiet()}
+      </div>
+    </div>
+  );
+
+  // Return the JSX directly
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Health & Fitness</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Health &amp; Fitness</h1>
         <p className="text-gray-600 mt-2">Track your workouts, goals, and nutrition.</p>
       </div>
 
@@ -709,3 +1009,6 @@ const HealthFitness = () => {
 };
 
 export default HealthFitness;
+    
+
+

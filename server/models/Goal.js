@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const goalSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
+    default: 'public',
     required: true
   },
   title: {
@@ -35,7 +35,7 @@ const goalSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['fitness', 'nutrition', 'other'],
+    enum: ['fitness', 'workout', 'nutrition', 'other'],
     default: 'fitness'
   }
 }, {

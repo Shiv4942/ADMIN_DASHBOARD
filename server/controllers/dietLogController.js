@@ -27,21 +27,39 @@ export const createDietLog = asyncHandler(async (req, res) => {
 // @desc    Get all diet logs
 // @route   GET /api/diet-logs
 export const getDietLogs = asyncHandler(async (req, res) => {
-  const { meal, startDate, endDate } = req.query;
-  const query = {};
-  
-  if (meal) {
-    query.meal = meal;
+  try {
+    console.log('Fetching diet logs with query:', req.query);
+    const { meal, startDate, endDate } = req.query;
+    const query = { userId: 'public' }; // Add default userId filter
+    
+    if (meal) {
+      query.meal = meal;
+    }
+    
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
+    }
+    
+    console.log('MongoDB query:', JSON.stringify(query, null, 2));
+    const dietLogs = await DietLog.find(query).sort({ date: -1 }).lean();
+    console.log(`Found ${dietLogs.length} diet logs`);
+    
+    // Ensure all dates are properly formatted
+    const formattedLogs = dietLogs.map(log => ({
+      ...log,
+      date: log.date ? new Date(log.date).toISOString() : null
+    }));
+    
+    res.json(formattedLogs);
+  } catch (error) {
+    console.error('Error in getDietLogs:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch diet logs',
+      details: error.message 
+    });
   }
-  
-  if (startDate || endDate) {
-    query.date = {};
-    if (startDate) query.date.$gte = new Date(startDate);
-    if (endDate) query.date.$lte = new Date(endDate);
-  }
-  
-  const dietLogs = await DietLog.find(query).sort({ date: -1 });
-  res.json(dietLogs);
 });
 
 // @desc    Get diet log by ID

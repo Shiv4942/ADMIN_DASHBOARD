@@ -58,8 +58,9 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Therapist, session date, and type are required' });
     }
     
+    // Use a default userId since we're not using authentication yet
     const updated = await Therapy.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id }, 
+      { _id: req.params.id },
       { 
         therapist: therapist.trim(), 
         sessionDate: new Date(sessionDate), 
@@ -86,7 +87,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await Therapy.findOneAndDelete(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id },
       { maxTimeMS: 15000 }
     );
     
