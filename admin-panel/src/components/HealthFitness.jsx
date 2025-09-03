@@ -51,6 +51,21 @@ const HealthFitness = () => {
     ]
   });
 
+  // Fetch data when tab changes or when we need to refresh
+  const fetchDietLogs = async () => {
+    try {
+      setLoading(prev => ({ ...prev, dietLogs: true }));
+      const data = await dietLogService.getDietLogs();
+      setDietLogs(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch diet logs');
+      console.error('Error fetching diet logs:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, dietLogs: false }));
+    }
+  };
+
   // Fetch data when tab changes
   useEffect(() => {
     const fetchData = async () => {
@@ -63,10 +78,9 @@ const HealthFitness = () => {
           setLoading(prev => ({ ...prev, goals: true }));
           const data = await goalService.getGoals();
           setGoals(data);
-        } else if (activeTab === 'diet' && dietLogs.length === 0) {
-          setLoading(prev => ({ ...prev, dietLogs: true }));
-          const data = await dietLogService.getDietLogs();
-          setDietLogs(data);
+        } else if (activeTab === 'diet') {
+          // Always fetch diet logs when switching to diet tab to ensure fresh data
+          await fetchDietLogs();
         }
       } catch (err) {
         setError(err.message || 'Failed to fetch data');
@@ -416,22 +430,35 @@ const HealthFitness = () => {
     );
   };
 
-  // Diet Log Handlers
-  const handleCreateDietLog = async () => {
+  // Diet Log Handlers - Fixed version
+  const handleAddMeal = async () => {
     if (!newMeal.food || !newMeal.meal) {
       setError('Please fill in all required fields');
       return;
     }
+    
     try {
-      const dietLog = await dietLogService.createDietLog({
-        ...newMeal,
+      setLoading(prev => ({ ...prev, dietLogs: true }));
+      
+      // Create the meal data
+      const mealData = {
+        meal: newMeal.meal,
+        food: newMeal.food,
+        calories: parseInt(newMeal.calories, 10) || 0,
         protein: parseFloat(newMeal.protein) || 0,
         carbs: parseFloat(newMeal.carbs) || 0,
         fat: parseFloat(newMeal.fat) || 0,
-        calories: parseInt(newMeal.calories, 10) || 0
-      });
+        notes: newMeal.notes || '',
+        date: new Date().toISOString()
+      };
       
-      setDietLogs([dietLog, ...dietLogs]);
+      // Create the diet log via API
+      const response = await dietLogService.createDietLog(mealData);
+      
+      // Add the new meal to the top of the list
+      setDietLogs(prevLogs => [response, ...prevLogs]);
+      
+      // Reset the form
       setNewMeal({ 
         meal: 'Breakfast', 
         food: '', 
@@ -441,43 +468,22 @@ const HealthFitness = () => {
         fat: 0,
         notes: '' 
       });
+      
       setShowMealForm(false);
       setError(null);
+      
     } catch (err) {
-      setError(err.message || 'Failed to log meal');
-    }
-  };
-
-  const handleAddMeal = async () => {
-    if (!newMeal.food) {
-      setError('Please enter food name');
-      return;
-    }
-    
-    try {
-      const mealLog = await dietLogService.createDietLog({
-        ...newMeal,
-        date: new Date().toISOString()
-      });
-      setDietLogs([mealLog, ...dietLogs]);
-      setNewMeal({ 
-        meal: 'Breakfast', 
-        food: '', 
-        calories: 0, 
-        protein: 0, 
-        carbs: 0, 
-        fat: 0,
-        notes: ''
-      });
-      setShowMealForm(false);
-      setError(null);
-    } catch (err) {
-      setError(err.message || 'Failed to add meal');
+      console.error('Error adding meal:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to add meal');
+    } finally {
+      setLoading(prev => ({ ...prev, dietLogs: false }));
     }
   };
   
   const handleAddMealPlan = async () => {
     try {
+      setLoading(prev => ({ ...prev, dietLogs: true }));
+      
       // Filter out empty meals
       const validMeals = mealPlan.meals.filter(meal => meal.food.trim() !== '');
       
@@ -490,12 +496,19 @@ const HealthFitness = () => {
       const newMealLogs = [];
       
       for (const meal of validMeals) {
+        const mealData = {
+          meal: meal.meal,
+          food: meal.food,
+          calories: parseInt(meal.calories, 10) || 0,
+          protein: parseFloat(meal.protein) || 0,
+          carbs: parseFloat(meal.carbs) || 0,
+          fat: parseFloat(meal.fat) || 0,
+          notes: mealPlan.name ? `Part of meal plan: ${mealPlan.name}` : '',
+          date: new Date().toISOString()
+        };
+        
         try {
-          const response = await dietLogService.createDietLog({
-            ...meal,
-            date: new Date().toISOString(),
-            notes: mealPlan.name ? `Part of meal plan: ${mealPlan.name}` : ''
-          });
+          const response = await dietLogService.createDietLog(mealData);
           newMealLogs.push(response);
         } catch (err) {
           console.error(`Error adding meal ${meal.meal}:`, err);
@@ -504,13 +517,11 @@ const HealthFitness = () => {
       }
       
       if (newMealLogs.length > 0) {
-        // Update the diet logs state with the new meals
+        // Update the diet logs state with the new meals (add to beginning)
         setDietLogs(prevLogs => [...newMealLogs, ...prevLogs]);
         
-        // Show success message
+        // Clear error and reset form
         setError(null);
-        
-        // Reset form
         setMealPlan({
           name: '',
           description: '',
@@ -529,6 +540,8 @@ const HealthFitness = () => {
     } catch (err) {
       console.error('Error in handleAddMealPlan:', err);
       setError(err.response?.data?.message || 'Failed to add meal plan');
+    } finally {
+      setLoading(prev => ({ ...prev, dietLogs: false }));
     }
   };
   
@@ -564,13 +577,40 @@ const HealthFitness = () => {
   // Group diet logs by date
   const groupDietLogsByDate = () => {
     const grouped = {};
+    
     dietLogs.forEach(log => {
-      const date = format(new Date(log.date || log.createdAt), 'yyyy-MM-dd');
-      if (!grouped[date]) {
-        grouped[date] = [];
+      try {
+        // Try to parse the date from either date or createdAt field
+        const dateObj = log.date ? new Date(log.date) : (log.createdAt ? new Date(log.createdAt) : new Date());
+        const dateKey = format(dateObj, 'yyyy-MM-dd');
+        
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = [];
+        }
+        
+        // Add the log to the group
+        grouped[dateKey].push({
+          ...log,
+          // Ensure date is in a consistent format
+          date: dateObj.toISOString(),
+          // Keep the original createdAt or set a new one
+          createdAt: log.createdAt ? new Date(log.createdAt).toISOString() : dateObj.toISOString()
+        });
+      } catch (err) {
+        console.error('Error processing log date:', err, log);
+        // Handle invalid dates by using a fallback date
+        const fallbackKey = '1970-01-01';
+        if (!grouped[fallbackKey]) {
+          grouped[fallbackKey] = [];
+        }
+        grouped[fallbackKey].push({
+          ...log,
+          date: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        });
       }
-      grouped[date].push(log);
     });
+    
     return grouped;
   };
 
@@ -584,14 +624,16 @@ const HealthFitness = () => {
           <button
             onClick={() => setShowMealPlanForm(true)}
             className="bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600 mr-2"
+            disabled={loading.dietLogs}
           >
-            + Create Meal Plan
+            {loading.dietLogs ? 'Loading...' : '+ Create Meal Plan'}
           </button>
           <button
             onClick={() => setShowMealForm(true)}
             className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+            disabled={loading.dietLogs}
           >
-            + Add Meal
+            {loading.dietLogs ? 'Loading...' : '+ Add Meal'}
           </button>
         </div>
       </div>
@@ -679,14 +721,16 @@ const HealthFitness = () => {
               <button
                 onClick={() => setShowMealForm(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                disabled={loading.dietLogs}
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddMeal}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600"
+                disabled={loading.dietLogs}
               >
-                Add Meal
+                {loading.dietLogs ? 'Adding...' : 'Add Meal'}
               </button>
             </div>
           </div>
@@ -808,14 +852,16 @@ const HealthFitness = () => {
               <button
                 onClick={() => setShowMealPlanForm(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                disabled={loading.dietLogs}
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddMealPlan}
                 className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700"
+                disabled={loading.dietLogs}
               >
-                Save Meal Plan
+                {loading.dietLogs ? 'Saving...' : 'Save Meal Plan'}
               </button>
             </div>
           </div>
@@ -934,43 +980,6 @@ const HealthFitness = () => {
   );
 
   // Main render function
-  const render = () => (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Health &amp; Fitness</h1>
-        <p className="text-gray-600 mt-2">Track your workouts, goals, and nutrition.</p>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-8">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      <div className="mt-6">
-        {activeTab === 'workouts' && renderWorkouts()}
-        {activeTab === 'goals' && renderGoals()}
-        {activeTab === 'diet' && renderDiet()}
-      </div>
-    </div>
-  );
-
-  // Return the JSX directly
   return (
     <div className="space-y-6">
       <div>
@@ -1009,6 +1018,3 @@ const HealthFitness = () => {
 };
 
 export default HealthFitness;
-    
-
-

@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import PersonalDevelopment from './components/PersonalDevelopment';
 import HealthFitness from './components/HealthFitness';
-import LearningTools from './components/LearningTools';
+import LearningTools from "./components/learning/LearningTools";
 import FinancesOverview from './components/FinancesOverview';
 import DrugAndMed from './components/DrugAndMed';
 

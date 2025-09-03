@@ -14,6 +14,10 @@ const dietLogSchema = new mongoose.Schema({
     set: function(value) {
       // Convert 'Snacks' to 'Snack' for consistency
       return value === 'Snacks' ? 'Snack' : value;
+    },
+    get: function(value) {
+      // For backward compatibility, return 'Snack' when 'Snacks' is stored
+      return value === 'Snacks' ? 'Snack' : value;
     }
   },
   food: {
