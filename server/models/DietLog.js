@@ -9,8 +9,12 @@ const dietLogSchema = new mongoose.Schema({
   meal: {
     type: String,
     required: true,
-    enum: ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Other'],
-    default: 'Other'
+    enum: ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Snacks', 'Other'],
+    default: 'Other',
+    set: function(value) {
+      // Convert 'Snacks' to 'Snack' for consistency
+      return value === 'Snacks' ? 'Snack' : value;
+    }
   },
   food: {
     type: String,
