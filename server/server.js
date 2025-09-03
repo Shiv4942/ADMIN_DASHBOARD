@@ -23,7 +23,7 @@ app.use(cors({
       'http://localhost:5173', // Development
       'http://localhost:3000', // Alternative dev port
       'http://localhost:5174', // Vite dev server
-      'https://admin-dashboard-cza3batbl-shiv4942s-projects.vercel.app', // Vercel frontend
+      'https://admin-dashboard-e3nfv3xk7-shiv4942s-projects.vercel.app', // Vercel frontend
       'https://admin-dashboard-git-master-shiv4942s-projects.vercel.app', // Vercel frontend
       'https://admin-dashboard-qdgo.onrender.com', // Your backend domain
       'http://127.0.0.1:5173' // Localhost with IP
