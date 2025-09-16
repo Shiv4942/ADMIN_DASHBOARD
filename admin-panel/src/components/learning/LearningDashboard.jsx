@@ -129,15 +129,33 @@ const mockLearningService = {
     totalSkills: 25
   }),
   
-  createCourse: async (data) => ({ _id: Date.now(), ...data }),
+  createCourse: async (data) => ({
+    _id: Date.now().toString(),
+    title: data.title || 'New Course',
+    status: data.status || 'active',
+    progress: data.progress || 0,
+    ...data
+  }),
   updateCourse: async (id, data) => ({ _id: id, ...data }),
   deleteCourse: async (id) => ({ success: true }),
   
-  createLearningMethod: async (data) => ({ _id: Date.now(), ...data }),
+  createLearningMethod: async (data) => ({
+    _id: Date.now().toString(),
+    name: data.name || 'New Learning Method',
+    duration: data.duration || 0,
+    effectiveness: data.effectiveness || 5,
+    ...data
+  }),
   updateLearningMethod: async (id, data) => ({ _id: id, ...data }),
   deleteLearningMethod: async (id) => ({ success: true }),
   
-  createSkill: async (data) => ({ _id: Date.now(), ...data }),
+  createSkill: async (data) => ({
+    _id: Date.now().toString(),
+    name: data.name || 'New Skill',
+    confidence: data.confidence || 5,
+    lastPracticed: data.lastPracticed || new Date().toISOString().split('T')[0],
+    ...data
+  }),
   updateSkill: async (id, data) => ({ _id: id, ...data }),
   deleteSkill: async (id) => ({ success: true }),
   updateSkillConfidence: async (id, data) => ({ _id: id, ...data }),
