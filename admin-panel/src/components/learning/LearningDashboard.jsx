@@ -85,81 +85,185 @@ const parseError = (error) => {
   );
 };
 
-// Mock learning service with reliable data
+// Helper functions for localStorage
+const storage = {
+  get: (key, defaultValue = []) => {
+    try {
+      const item = localStorage.getItem(`learning_${key}`);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (error) {
+      console.error(`Error reading ${key} from localStorage:`, error);
+      return defaultValue;
+    }
+  },
+  set: (key, value) => {
+    try {
+      localStorage.setItem(`learning_${key}`, JSON.stringify(value));
+      return true;
+    } catch (error) {
+      console.error(`Error saving ${key} to localStorage:`, error);
+      return false;
+    }
+  }
+};
+
+// Mock learning service with localStorage persistence
 const mockLearningService = {
   // Simulate network delay
   delay: () => new Promise(resolve => setTimeout(resolve, 300)),
   
+  // Courses
   getCourses: async () => {
     await mockLearningService.delay();
-    return [
+    return storage.get('courses', [
       { _id: '1', title: 'React Fundamentals', status: 'active', progress: 75 },
       { _id: '2', title: 'JavaScript Advanced', status: 'completed', progress: 100 }
-    ];
+    ]);
   },
   
+  createCourse: async (data) => {
+    const courses = await mockLearningService.getCourses();
+    const newCourse = {
+      _id: Date.now().toString(),
+      title: data.title || 'New Course',
+      status: data.status || 'active',
+      progress: data.progress || 0,
+      ...data
+    };
+    courses.push(newCourse);
+    storage.set('courses', courses);
+    return newCourse;
+  },
+  
+  updateCourse: async (id, data) => {
+    const courses = await mockLearningService.getCourses();
+    const index = courses.findIndex(c => c._id === id);
+    if (index === -1) throw new Error('Course not found');
+    const updatedCourse = { ...courses[index], ...data, _id: id };
+    courses[index] = updatedCourse;
+    storage.set('courses', courses);
+    return updatedCourse;
+  },
+  
+  deleteCourse: async (id) => {
+    const courses = await mockLearningService.getCourses();
+    const filtered = courses.filter(c => c._id !== id);
+    storage.set('courses', filtered);
+    return { success: true };
+  },
+  
+  // Learning Methods
   getLearningMethods: async () => {
     await mockLearningService.delay();
-    return [
+    return storage.get('methods', [
       { _id: '1', name: 'Video Learning', duration: 120, effectiveness: 8 },
       { _id: '2', name: 'Hands-on Practice', duration: 180, effectiveness: 9 }
-    ];
+    ]);
   },
   
+  createLearningMethod: async (data) => {
+    const methods = await mockLearningService.getLearningMethods();
+    const newMethod = {
+      _id: Date.now().toString(),
+      name: data.name || 'New Learning Method',
+      duration: data.duration || 0,
+      effectiveness: data.effectiveness || 5,
+      ...data
+    };
+    methods.push(newMethod);
+    storage.set('methods', methods);
+    return newMethod;
+  },
+  
+  updateLearningMethod: async (id, data) => {
+    const methods = await mockLearningService.getLearningMethods();
+    const index = methods.findIndex(m => m._id === id);
+    if (index === -1) throw new Error('Method not found');
+    const updatedMethod = { ...methods[index], ...data, _id: id };
+    methods[index] = updatedMethod;
+    storage.set('methods', methods);
+    return updatedMethod;
+  },
+  
+  deleteLearningMethod: async (id) => {
+    const methods = await mockLearningService.getLearningMethods();
+    const filtered = methods.filter(m => m._id !== id);
+    storage.set('methods', filtered);
+    return { success: true };
+  },
+  
+  // Skills
   getSkills: async () => {
     await mockLearningService.delay();
-    return [
+    return storage.get('skills', [
       { _id: '1', name: 'React', confidence: 7, lastPracticed: '2025-01-01' },
       { _id: '2', name: 'Node.js', confidence: 6, lastPracticed: '2025-01-02' }
-    ];
+    ]);
   },
   
-  getCourseStats: async () => ({
-    totalCourses: 15,
-    inProgress: 3,
-    completed: 12
-  }),
+  createSkill: async (data) => {
+    const skills = await mockLearningService.getSkills();
+    const newSkill = {
+      _id: Date.now().toString(),
+      name: data.name || 'New Skill',
+      confidence: data.confidence || 5,
+      lastPracticed: data.lastPracticed || new Date().toISOString().split('T')[0],
+      ...data
+    };
+    skills.push(newSkill);
+    storage.set('skills', skills);
+    return newSkill;
+  },
   
-  getLearningMethodStats: async () => ({
-    totalMethods: 8,
-    totalTimeSpent: 1440
-  }),
+  updateSkill: async (id, data) => {
+    const skills = await mockLearningService.getSkills();
+    const index = skills.findIndex(s => s._id === id);
+    if (index === -1) throw new Error('Skill not found');
+    const updatedSkill = { ...skills[index], ...data, _id: id };
+    skills[index] = updatedSkill;
+    storage.set('skills', skills);
+    return updatedSkill;
+  },
   
-  getSkillStats: async () => ({
-    totalSkills: 25
-  }),
+  deleteSkill: async (id) => {
+    const skills = await mockLearningService.getSkills();
+    const filtered = skills.filter(s => s._id !== id);
+    storage.set('skills', filtered);
+    return { success: true };
+  },
   
-  createCourse: async (data) => ({
-    _id: Date.now().toString(),
-    title: data.title || 'New Course',
-    status: data.status || 'active',
-    progress: data.progress || 0,
-    ...data
-  }),
-  updateCourse: async (id, data) => ({ _id: id, ...data }),
-  deleteCourse: async (id) => ({ success: true }),
+  updateSkillConfidence: async (id, data) => {
+    return mockLearningService.updateSkill(id, { confidence: data.confidence });
+  },
   
-  createLearningMethod: async (data) => ({
-    _id: Date.now().toString(),
-    name: data.name || 'New Learning Method',
-    duration: data.duration || 0,
-    effectiveness: data.effectiveness || 5,
-    ...data
-  }),
-  updateLearningMethod: async (id, data) => ({ _id: id, ...data }),
-  deleteLearningMethod: async (id) => ({ success: true }),
+  updateSkillLastPracticed: async (id, data) => {
+    return mockLearningService.updateSkill(id, { lastPracticed: data.lastPracticed });
+  },
   
-  createSkill: async (data) => ({
-    _id: Date.now().toString(),
-    name: data.name || 'New Skill',
-    confidence: data.confidence || 5,
-    lastPracticed: data.lastPracticed || new Date().toISOString().split('T')[0],
-    ...data
-  }),
-  updateSkill: async (id, data) => ({ _id: id, ...data }),
-  deleteSkill: async (id) => ({ success: true }),
-  updateSkillConfidence: async (id, data) => ({ _id: id, ...data }),
-  updateSkillLastPracticed: async (id, data) => ({ _id: id, ...data })
+  // Stats (these are still calculated, not stored)
+  getCourseStats: async () => {
+    const courses = await mockLearningService.getCourses();
+    return {
+      totalCourses: courses.length,
+      inProgress: courses.filter(c => c.status === 'active').length,
+      completed: courses.filter(c => c.status === 'completed').length
+    };
+  },
+  
+  getLearningMethodStats: async () => {
+    const methods = await mockLearningService.getLearningMethods();
+    return {
+      totalMethods: methods.length,
+      totalTimeSpent: methods.reduce((sum, m) => sum + (parseInt(m.duration) || 0), 0)
+    };
+  },
+  
+  getSkillStats: async () => {
+    const skills = await mockLearningService.getSkills();
+    return {
+      totalSkills: skills.length
+    };
+  }
 };
 
 // Error boundary component
@@ -248,13 +352,18 @@ const LearningDashboard = () => {
     stats: null
   });
   
-  // Form visibility states
+  // Form states
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [showMethodForm, setShowMethodForm] = useState(false);
   const [showSkillForm, setShowSkillForm] = useState(false);
   
   // Current item being edited
   const [currentItem, setCurrentItem] = useState(null);
+  
+  // Form data states
+  const [courseFormData, setCourseFormData] = useState({ title: '', status: 'active' });
+  const [methodFormData, setMethodFormData] = useState({ name: '', duration: '', effectiveness: 5 });
+  const [skillFormData, setSkillFormData] = useState({ name: '', confidence: 5, lastPracticed: new Date().toISOString().split('T')[0] });
   
   // Stats state
   const [stats, setStats] = useState({
@@ -384,16 +493,19 @@ const LearningDashboard = () => {
   }, []);
 
   // CRUD operations with consistent error handling
-  const handleSaveCourse = async (courseData) => {
+  const handleSaveCourse = async (e) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     try {
       await handleAsyncOperation(
         async () => {
           if (currentItem) {
-            const updatedCourse = await mockLearningService.updateCourse(currentItem._id, courseData);
+            const updatedCourse = await mockLearningService.updateCourse(currentItem._id, courseFormData);
             setCourses(prev => prev.map(c => c._id === currentItem._id ? updatedCourse : c));
             return updatedCourse;
           } else {
-            const newCourse = await mockLearningService.createCourse(courseData);
+            const newCourse = await mockLearningService.createCourse(courseFormData);
             setCourses(prev => [...prev, newCourse]);
             return newCourse;
           }
@@ -408,6 +520,14 @@ const LearningDashboard = () => {
     } catch (error) {
       // Keep form open on error
     }
+  };
+  
+  const handleCourseInputChange = (e) => {
+    const { name, value } = e.target;
+    setCourseFormData(prev => ({
+      ...prev,
+      [name]: name === 'progress' ? parseInt(value, 10) : value
+    }));
   };
 
   const handleDeleteCourse = async (id) => {
@@ -425,16 +545,19 @@ const LearningDashboard = () => {
   };
 
   // Learning Method operations
-  const handleSaveMethod = async (methodData) => {
+  const handleSaveMethod = async (e) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     try {
       await handleAsyncOperation(
         async () => {
           if (currentItem) {
-            const updatedMethod = await mockLearningService.updateLearningMethod(currentItem._id, methodData);
+            const updatedMethod = await mockLearningService.updateLearningMethod(currentItem._id, methodFormData);
             setLearningMethods(prev => prev.map(m => m._id === currentItem._id ? updatedMethod : m));
             return updatedMethod;
           } else {
-            const newMethod = await mockLearningService.createLearningMethod(methodData);
+            const newMethod = await mockLearningService.createLearningMethod(methodFormData);
             setLearningMethods(prev => [...prev, newMethod]);
             return newMethod;
           }
@@ -449,6 +572,14 @@ const LearningDashboard = () => {
     } catch (error) {
       // Keep form open on error
     }
+  };
+  
+  const handleMethodInputChange = (e) => {
+    const { name, value, type } = e.target;
+    setMethodFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? parseFloat(value) : value
+    }));
   };
 
   const handleDeleteMethod = async (id) => {
@@ -466,16 +597,19 @@ const LearningDashboard = () => {
   };
 
   // Skill operations
-  const handleSaveSkill = async (skillData) => {
+  const handleSaveSkill = async (e) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     try {
       await handleAsyncOperation(
         async () => {
           if (currentItem) {
-            const updatedSkill = await mockLearningService.updateSkill(currentItem._id, skillData);
+            const updatedSkill = await mockLearningService.updateSkill(currentItem._id, skillFormData);
             setSkills(prev => prev.map(s => s._id === currentItem._id ? updatedSkill : s));
             return updatedSkill;
           } else {
-            const newSkill = await mockLearningService.createSkill(skillData);
+            const newSkill = await mockLearningService.createSkill(skillFormData);
             setSkills(prev => [...prev, newSkill]);
             return newSkill;
           }
@@ -490,6 +624,14 @@ const LearningDashboard = () => {
     } catch (error) {
       // Keep form open on error
     }
+  };
+  
+  const handleSkillInputChange = (e) => {
+    const { name, value, type } = e.target;
+    setSkillFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? parseInt(value, 10) : value
+    }));
   };
 
   const handleDeleteSkill = async (id) => {
@@ -539,31 +681,53 @@ const LearningDashboard = () => {
   // Event handlers for forms
   const handleAddCourse = () => {
     setCurrentItem(null);
+    setCourseFormData({ title: '', status: 'active' });
     setShowCourseForm(true);
   };
 
   const handleEditCourse = (course) => {
     setCurrentItem(course);
+    setCourseFormData({
+      title: course.title || '',
+      status: course.status || 'active',
+      progress: course.progress || 0
+    });
     setShowCourseForm(true);
   };
 
   const handleAddMethod = () => {
     setCurrentItem(null);
+    setMethodFormData({ name: '', duration: '', effectiveness: 5 });
     setShowMethodForm(true);
   };
 
   const handleEditMethod = (method) => {
     setCurrentItem(method);
+    setMethodFormData({
+      name: method.name || '',
+      duration: method.duration || '',
+      effectiveness: method.effectiveness || 5
+    });
     setShowMethodForm(true);
   };
 
   const handleAddSkill = () => {
     setCurrentItem(null);
+    setSkillFormData({ 
+      name: '', 
+      confidence: 5, 
+      lastPracticed: new Date().toISOString().split('T')[0] 
+    });
     setShowSkillForm(true);
   };
 
   const handleEditSkill = (skill) => {
     setCurrentItem(skill);
+    setSkillFormData({
+      name: skill.name || '',
+      confidence: skill.confidence || 5,
+      lastPracticed: skill.lastPracticed || new Date().toISOString().split('T')[0]
+    });
     setShowSkillForm(true);
   };
 
@@ -672,7 +836,7 @@ const LearningDashboard = () => {
               <div key={item._id || index} className="border rounded p-3">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">
-                    {item.title || item.name || `Item ${index + 1}`}
+                    {item.name || item.title || `Method ${index + 1}`}
                   </span>
                   <div className="space-x-2">
                     <button
@@ -770,28 +934,63 @@ const LearningDashboard = () => {
           </div>
         </div>
         
-        {/* Mock Forms - In real app, these would be proper form components */}
+        {/* Course Form Modal */}
         {showCourseForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <form onSubmit={handleSaveCourse} className="bg-white rounded-lg p-6 w-full max-w-md">
               <h3 className="text-lg font-medium mb-4">
                 {currentItem ? 'Edit Course' : 'Add Course'}
               </h3>
               <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Course Title"
-                  className="w-full p-2 border rounded"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={courseFormData.title}
+                    onChange={handleCourseInputChange}
+                    placeholder="Course Title"
+                    className="w-full p-2 border rounded"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    name="status"
+                    value={courseFormData.status}
+                    onChange={handleCourseInputChange}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                    <option value="planned">Planned</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Progress ({courseFormData.progress || 0}%)
+                  </label>
+                  <input
+                    type="range"
+                    name="progress"
+                    min="0"
+                    max="100"
+                    value={courseFormData.progress || 0}
+                    onChange={handleCourseInputChange}
+                    className="w-full"
+                  />
+                </div>
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => handleSaveCourse({ title: 'New Course', status: 'active' })}
+                    type="submit"
                     disabled={loading.courses}
                     className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
                   >
                     {loading.courses ? 'Saving...' : 'Save'}
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowCourseForm(false)}
                     className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400"
                   >
@@ -799,31 +998,72 @@ const LearningDashboard = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </form>
           </div>
         )}
         
+        {/* Learning Method Form Modal */}
         {showMethodForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveMethod();
+              }} 
+              className="bg-white rounded-lg p-6 w-full max-w-md"
+            >
               <h3 className="text-lg font-medium mb-4">
                 {currentItem ? 'Edit Learning Method' : 'Add Learning Method'}
               </h3>
               <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Method Name"
-                  className="w-full p-2 border rounded"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Method Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={methodFormData.name}
+                    onChange={handleMethodInputChange}
+                    placeholder="Enter method name"
+                    className="w-full p-2 border rounded"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                  <input
+                    type="number"
+                    name="duration"
+                    value={methodFormData.duration}
+                    onChange={handleMethodInputChange}
+                    placeholder="Duration in minutes"
+                    className="w-full p-2 border rounded"
+                    min="1"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Effectiveness (1-10)</label>
+                  <input
+                    type="number"
+                    name="effectiveness"
+                    value={methodFormData.effectiveness}
+                    onChange={handleMethodInputChange}
+                    min="1"
+                    max="10"
+                    className="w-full p-2 border rounded"
+                    required
+                  />
+                </div>
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => handleSaveMethod({ name: 'New Method', duration: 60 })}
+                    type="submit"
                     disabled={loading.methods}
                     className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
                   >
                     {loading.methods ? 'Saving...' : 'Save'}
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowMethodForm(false)}
                     className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400"
                   >
@@ -831,31 +1071,67 @@ const LearningDashboard = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </form>
           </div>
         )}
         
+        {/* Skill Form Modal */}
         {showSkillForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <form onSubmit={handleSaveSkill} className="bg-white rounded-lg p-6 w-full max-w-md">
               <h3 className="text-lg font-medium mb-4">
                 {currentItem ? 'Edit Skill' : 'Add Skill'}
               </h3>
               <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Skill Name"
-                  className="w-full p-2 border rounded"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Skill Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={skillFormData.name}
+                    onChange={handleSkillInputChange}
+                    placeholder="e.g., React, Node.js"
+                    className="w-full p-2 border rounded"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confidence: {skillFormData.confidence}/10
+                  </label>
+                  <input
+                    type="range"
+                    name="confidence"
+                    min="1"
+                    max="10"
+                    value={skillFormData.confidence}
+                    onChange={handleSkillInputChange}
+                    className="w-full mb-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Practiced
+                  </label>
+                  <input
+                    type="date"
+                    name="lastPracticed"
+                    value={skillFormData.lastPracticed}
+                    onChange={handleSkillInputChange}
+                    className="w-full p-2 border rounded"
+                    required
+                  />
+                </div>
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => handleSaveSkill({ name: 'New Skill', confidence: 5 })}
+                    type="submit"
                     disabled={loading.skills}
                     className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
                   >
                     {loading.skills ? 'Saving...' : 'Save'}
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowSkillForm(false)}
                     className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400"
                   >
@@ -863,7 +1139,7 @@ const LearningDashboard = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </form>
           </div>
         )}
         
