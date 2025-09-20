@@ -1,10 +1,11 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const courseSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false,
+    default: null
   },
   title: {
     type: String,
@@ -27,8 +28,19 @@ const courseSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Not Started', 'In Progress', 'Completed'],
-    default: 'Not Started'
+    enum: ['Not Started', 'In Progress', 'Active', 'Completed'],
+    default: 'Not Started',
+    set: function(value) {
+      // Convert the status to title case for consistency
+      if (typeof value === 'string') {
+        const lower = value.toLowerCase();
+        if (lower === 'active') return 'Active';
+        if (lower === 'in progress' || lower === 'in-progress') return 'In Progress';
+        if (lower === 'not started' || lower === 'not-started') return 'Not Started';
+        if (lower === 'completed') return 'Completed';
+      }
+      return value; // Return the original value if no match
+    }
   },
   startDate: {
     type: Date,
@@ -49,4 +61,6 @@ const courseSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-module.exports = mongoose.model('Course', courseSchema);
+const Course = mongoose.model('Course', courseSchema);
+
+export default Course;

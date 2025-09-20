@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { ChartBarIcon, BookOpenIcon, AcademicCapIcon, LightBulbIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import {
+  getCourses, createCourse, updateCourse, deleteCourse, getCourseStats,
+  getLearningMethods, createLearningMethod, updateLearningMethod, deleteLearningMethod, getLearningMethodStats,
+  getSkills, createSkill, updateSkill, deleteSkill, updateSkillPractice, getSkillStats
+} from '../../services/learningService';
 
 // Error handling utilities
 class AppError extends Error {
@@ -104,165 +109,6 @@ const storage = {
       console.error(`Error saving ${key} to localStorage:`, error);
       return false;
     }
-  }
-};
-
-// Mock learning service with localStorage persistence
-const mockLearningService = {
-  // Simulate network delay
-  delay: () => new Promise(resolve => setTimeout(resolve, 300)),
-  
-  // Courses
-  getCourses: async () => {
-    await mockLearningService.delay();
-    return storage.get('courses', [
-      { _id: '1', title: 'React Fundamentals', status: 'active', progress: 75 },
-      { _id: '2', title: 'JavaScript Advanced', status: 'completed', progress: 100 }
-    ]);
-  },
-  
-  createCourse: async (data) => {
-    const courses = await mockLearningService.getCourses();
-    const newCourse = {
-      _id: Date.now().toString(),
-      title: data.title || 'New Course',
-      status: data.status || 'active',
-      progress: data.progress || 0,
-      ...data
-    };
-    courses.push(newCourse);
-    storage.set('courses', courses);
-    return newCourse;
-  },
-  
-  updateCourse: async (id, data) => {
-    const courses = await mockLearningService.getCourses();
-    const index = courses.findIndex(c => c._id === id);
-    if (index === -1) throw new Error('Course not found');
-    const updatedCourse = { ...courses[index], ...data, _id: id };
-    courses[index] = updatedCourse;
-    storage.set('courses', courses);
-    return updatedCourse;
-  },
-  
-  deleteCourse: async (id) => {
-    const courses = await mockLearningService.getCourses();
-    const filtered = courses.filter(c => c._id !== id);
-    storage.set('courses', filtered);
-    return { success: true };
-  },
-  
-  // Learning Methods
-  getLearningMethods: async () => {
-    await mockLearningService.delay();
-    return storage.get('methods', [
-      { _id: '1', name: 'Video Learning', duration: 120, effectiveness: 8 },
-      { _id: '2', name: 'Hands-on Practice', duration: 180, effectiveness: 9 }
-    ]);
-  },
-  
-  createLearningMethod: async (data) => {
-    const methods = await mockLearningService.getLearningMethods();
-    const newMethod = {
-      _id: Date.now().toString(),
-      name: data.name || 'New Learning Method',
-      duration: data.duration || 0,
-      effectiveness: data.effectiveness || 5,
-      ...data
-    };
-    methods.push(newMethod);
-    storage.set('methods', methods);
-    return newMethod;
-  },
-  
-  updateLearningMethod: async (id, data) => {
-    const methods = await mockLearningService.getLearningMethods();
-    const index = methods.findIndex(m => m._id === id);
-    if (index === -1) throw new Error('Method not found');
-    const updatedMethod = { ...methods[index], ...data, _id: id };
-    methods[index] = updatedMethod;
-    storage.set('methods', methods);
-    return updatedMethod;
-  },
-  
-  deleteLearningMethod: async (id) => {
-    const methods = await mockLearningService.getLearningMethods();
-    const filtered = methods.filter(m => m._id !== id);
-    storage.set('methods', filtered);
-    return { success: true };
-  },
-  
-  // Skills
-  getSkills: async () => {
-    await mockLearningService.delay();
-    return storage.get('skills', [
-      { _id: '1', name: 'React', confidence: 7, lastPracticed: '2025-01-01' },
-      { _id: '2', name: 'Node.js', confidence: 6, lastPracticed: '2025-01-02' }
-    ]);
-  },
-  
-  createSkill: async (data) => {
-    const skills = await mockLearningService.getSkills();
-    const newSkill = {
-      _id: Date.now().toString(),
-      name: data.name || 'New Skill',
-      confidence: data.confidence || 5,
-      lastPracticed: data.lastPracticed || new Date().toISOString().split('T')[0],
-      ...data
-    };
-    skills.push(newSkill);
-    storage.set('skills', skills);
-    return newSkill;
-  },
-  
-  updateSkill: async (id, data) => {
-    const skills = await mockLearningService.getSkills();
-    const index = skills.findIndex(s => s._id === id);
-    if (index === -1) throw new Error('Skill not found');
-    const updatedSkill = { ...skills[index], ...data, _id: id };
-    skills[index] = updatedSkill;
-    storage.set('skills', skills);
-    return updatedSkill;
-  },
-  
-  deleteSkill: async (id) => {
-    const skills = await mockLearningService.getSkills();
-    const filtered = skills.filter(s => s._id !== id);
-    storage.set('skills', filtered);
-    return { success: true };
-  },
-  
-  updateSkillConfidence: async (id, data) => {
-    return mockLearningService.updateSkill(id, { confidence: data.confidence });
-  },
-  
-  updateSkillLastPracticed: async (id, data) => {
-    return mockLearningService.updateSkill(id, { lastPracticed: data.lastPracticed });
-  },
-  
-  // Stats (these are still calculated, not stored)
-  getCourseStats: async () => {
-    const courses = await mockLearningService.getCourses();
-    return {
-      totalCourses: courses.length,
-      inProgress: courses.filter(c => c.status === 'active').length,
-      completed: courses.filter(c => c.status === 'completed').length
-    };
-  },
-  
-  getLearningMethodStats: async () => {
-    const methods = await mockLearningService.getLearningMethods();
-    return {
-      totalMethods: methods.length,
-      totalTimeSpent: methods.reduce((sum, m) => sum + (parseInt(m.duration) || 0), 0)
-    };
-  },
-  
-  getSkillStats: async () => {
-    const skills = await mockLearningService.getSkills();
-    return {
-      totalSkills: skills.length
-    };
   }
 };
 
@@ -428,67 +274,78 @@ const LearningDashboard = () => {
     throw lastError;
   };
 
-  // Fetch data with error handling and retry capability
-  const fetchData = useCallback(async () => {
-    const operations = {
-      courses: () => mockLearningService.getCourses(),
-      methods: () => mockLearningService.getLearningMethods(),
-      skills: () => mockLearningService.getSkills()
-    };
-
-    if (operations[activeTab]) {
-      try {
-        const data = await handleAsyncOperation(
-          operations[activeTab],
-          activeTab,
-          null,
-          (result) => {
-            switch (activeTab) {
-              case 'courses':
-                setCourses(result);
-                break;
-              case 'methods':
-                setLearningMethods(result);
-                break;
-              case 'skills':
-                setSkills(result);
-                break;
-            }
-          }
-        );
-      } catch (error) {
-        // Error already handled in handleAsyncOperation
-      }
+  // Fetch data functions
+  const fetchCourses = useCallback(async () => {
+    try {
+      setLoading(prev => ({ ...prev, courses: true }));
+      const data = await getCourses();
+      setCourses(data);
+      setErrors(prev => ({ ...prev, courses: null }));
+    } catch (error) {
+      const err = parseError(error);
+      setErrors(prev => ({ ...prev, courses: err }));
+      toast.error(`Failed to load courses: ${err.message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, courses: false }));
     }
-  }, [activeTab]);
+  }, []);
+
+  const fetchLearningMethods = useCallback(async () => {
+    try {
+      setLoading(prev => ({ ...prev, methods: true }));
+      const data = await getLearningMethods();
+      setLearningMethods(data);
+      setErrors(prev => ({ ...prev, methods: null }));
+    } catch (error) {
+      const err = parseError(error);
+      setErrors(prev => ({ ...prev, methods: err }));
+      toast.error(`Failed to load learning methods: ${err.message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, methods: false }));
+    }
+  }, []);
+
+  const fetchSkills = useCallback(async () => {
+    try {
+      setLoading(prev => ({ ...prev, skills: true }));
+      const data = await getSkills();
+      setSkills(data);
+      setErrors(prev => ({ ...prev, skills: null }));
+    } catch (error) {
+      const err = parseError(error);
+      setErrors(prev => ({ ...prev, skills: err }));
+      toast.error(`Failed to load skills: ${err.message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, skills: false }));
+    }
+  }, []);
 
   // Load stats with error handling
-  const loadStats = useCallback(async () => {
+  const fetchStats = useCallback(async () => {
     try {
-      await handleAsyncOperation(
-        async () => {
-          const [courses, methods, skills] = await Promise.all([
-            mockLearningService.getCourseStats(),
-            mockLearningService.getLearningMethodStats(),
-            mockLearningService.getSkillStats()
-          ]);
-          
-          return {
-            totalCourses: courses.totalCourses,
-            activeCourses: courses.inProgress,
-            completedCourses: courses.completed,
-            totalSkills: skills.totalSkills,
-            learningMethods: methods.totalMethods,
-            totalTimeSpent: methods.totalTimeSpent
-          };
-        },
-        'stats',
-        null,
-        (result) => setStats(result)
-      );
+      setLoading(prev => ({ ...prev, stats: true }));
+      const [courseStats, methodStats, skillStats] = await Promise.all([
+        getCourseStats(),
+        getLearningMethodStats(),
+        getSkillStats()
+      ]);
+      
+      setStats({
+        totalCourses: courseStats.total || 0,
+        activeCourses: courseStats.active || 0,
+        completedCourses: courseStats.completed || 0,
+        totalSkills: skillStats.total || 0,
+        learningMethods: methodStats.total || 0,
+        totalTimeSpent: methodStats.totalTimeSpent || 0
+      });
+      
+      setErrors(prev => ({ ...prev, stats: null }));
     } catch (error) {
-      // Stats errors are non-critical, just log them
-      console.warn('Failed to load stats:', error);
+      const err = parseError(error);
+      setErrors(prev => ({ ...prev, stats: err }));
+      console.error('Error loading stats:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, stats: false }));
     }
   }, []);
 
@@ -501,11 +358,11 @@ const LearningDashboard = () => {
       await handleAsyncOperation(
         async () => {
           if (currentItem) {
-            const updatedCourse = await mockLearningService.updateCourse(currentItem._id, courseFormData);
+            const updatedCourse = await updateCourse(currentItem._id, courseFormData);
             setCourses(prev => prev.map(c => c._id === currentItem._id ? updatedCourse : c));
             return updatedCourse;
           } else {
-            const newCourse = await mockLearningService.createCourse(courseFormData);
+            const newCourse = await createCourse(courseFormData);
             setCourses(prev => [...prev, newCourse]);
             return newCourse;
           }
@@ -533,7 +390,7 @@ const LearningDashboard = () => {
   const handleDeleteCourse = async (id) => {
     try {
       await handleAsyncOperation(
-        () => mockLearningService.deleteCourse(id),
+        () => deleteCourse(id),
         'courses',
         'Course deleted successfully',
         () => setCourses(prev => prev.filter(course => course._id !== id))
@@ -553,11 +410,11 @@ const LearningDashboard = () => {
       await handleAsyncOperation(
         async () => {
           if (currentItem) {
-            const updatedMethod = await mockLearningService.updateLearningMethod(currentItem._id, methodFormData);
+            const updatedMethod = await updateLearningMethod(currentItem._id, methodFormData);
             setLearningMethods(prev => prev.map(m => m._id === currentItem._id ? updatedMethod : m));
             return updatedMethod;
           } else {
-            const newMethod = await mockLearningService.createLearningMethod(methodFormData);
+            const newMethod = await createLearningMethod(methodFormData);
             setLearningMethods(prev => [...prev, newMethod]);
             return newMethod;
           }
@@ -585,7 +442,7 @@ const LearningDashboard = () => {
   const handleDeleteMethod = async (id) => {
     try {
       await handleAsyncOperation(
-        () => mockLearningService.deleteLearningMethod(id),
+        () => deleteLearningMethod(id),
         'methods',
         'Learning method deleted successfully',
         () => setLearningMethods(prev => prev.filter(method => method._id !== id))
@@ -605,11 +462,11 @@ const LearningDashboard = () => {
       await handleAsyncOperation(
         async () => {
           if (currentItem) {
-            const updatedSkill = await mockLearningService.updateSkill(currentItem._id, skillFormData);
+            const updatedSkill = await updateSkill(currentItem._id, skillFormData);
             setSkills(prev => prev.map(s => s._id === currentItem._id ? updatedSkill : s));
             return updatedSkill;
           } else {
-            const newSkill = await mockLearningService.createSkill(skillFormData);
+            const newSkill = await createSkill(skillFormData);
             setSkills(prev => [...prev, newSkill]);
             return newSkill;
           }
@@ -637,7 +494,7 @@ const LearningDashboard = () => {
   const handleDeleteSkill = async (id) => {
     try {
       await handleAsyncOperation(
-        () => mockLearningService.deleteSkill(id),
+        () => deleteSkill(id),
         'skills',
         'Skill deleted successfully',
         () => setSkills(prev => prev.filter(skill => skill._id !== id))
@@ -651,7 +508,7 @@ const LearningDashboard = () => {
   const handleUpdateConfidence = async (id, confidence) => {
     try {
       await handleAsyncOperation(
-        () => mockLearningService.updateSkillConfidence(id, { confidence }),
+        () => updateSkill(id, { confidence }),
         'skills',
         null,
         (updatedSkill) => setSkills(prev => prev.map(skill => 
@@ -666,7 +523,7 @@ const LearningDashboard = () => {
   const handleUpdateLastPracticed = async (id, lastPracticed) => {
     try {
       await handleAsyncOperation(
-        () => mockLearningService.updateSkillLastPracticed(id, { lastPracticed }),
+        () => updateSkill(id, { lastPracticed }),
         'skills',
         'Last practiced date updated',
         (updatedSkill) => setSkills(prev => prev.map(skill => 
@@ -730,6 +587,79 @@ const LearningDashboard = () => {
     });
     setShowSkillForm(true);
   };
+
+  // Fetch data for all sections
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch courses
+      setLoading(prev => ({ ...prev, courses: true }));
+      const coursesData = await getCourses();
+      setCourses(coursesData);
+      setErrors(prev => ({ ...prev, courses: null }));
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      setErrors(prev => ({ ...prev, courses: parseError(error) }));
+      toast.error('Failed to load courses');
+    } finally {
+      setLoading(prev => ({ ...prev, courses: false }));
+    }
+
+    try {
+      // Fetch learning methods
+      setLoading(prev => ({ ...prev, methods: true }));
+      const methodsData = await getLearningMethods();
+      setLearningMethods(methodsData);
+      setErrors(prev => ({ ...prev, methods: null }));
+    } catch (error) {
+      console.error('Error fetching learning methods:', error);
+      setErrors(prev => ({ ...prev, methods: parseError(error) }));
+      toast.error('Failed to load learning methods');
+    } finally {
+      setLoading(prev => ({ ...prev, methods: false }));
+    }
+
+    try {
+      // Fetch skills
+      setLoading(prev => ({ ...prev, skills: true }));
+      const skillsData = await getSkills();
+      setSkills(skillsData);
+      setErrors(prev => ({ ...prev, skills: null }));
+    } catch (error) {
+      console.error('Error fetching skills:', error);
+      setErrors(prev => ({ ...prev, skills: parseError(error) }));
+      toast.error('Failed to load skills');
+    } finally {
+      setLoading(prev => ({ ...prev, skills: false }));
+    }
+  }, []);
+
+  // Load statistics
+  const loadStats = useCallback(async () => {
+    try {
+      setLoading(prev => ({ ...prev, stats: true }));
+      const [courseStats, methodStats, skillStats] = await Promise.all([
+        getCourseStats(),
+        getLearningMethodStats(),
+        getSkillStats()
+      ]);
+      
+      setStats({
+        totalCourses: courseStats?.total || 0,
+        completedCourses: courseStats?.completed || 0,
+        inProgressCourses: courseStats?.inProgress || 0,
+        totalMethods: methodStats?.total || 0,
+        totalSkills: skillStats?.total || 0,
+        averageConfidence: skillStats?.averageConfidence || 0
+      });
+      setErrors(prev => ({ ...prev, stats: null }));
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      setErrors(prev => ({ ...prev, stats: parseError(error) }));
+      toast.error('Failed to load statistics');
+    } finally {
+      setLoading(prev => ({ ...prev, stats: false }));
+    }
+  }, []);
 
   // Initial data load
   useEffect(() => {

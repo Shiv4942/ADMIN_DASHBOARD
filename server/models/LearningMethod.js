@@ -1,10 +1,11 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const learningMethodSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false,
+    default: null
   },
   name: {
     type: String,
@@ -26,7 +27,21 @@ const learningMethodSchema = new mongoose.Schema({
   effectiveness: {
     type: String,
     enum: ['Very Low', 'Low', 'Medium', 'High', 'Very High'],
-    default: 'Medium'
+    default: 'Medium',
+    set: function(value) {
+      // Convert numeric effectiveness to string if needed
+      if (typeof value === 'number') {
+        const effectivenessMap = {
+          1: 'Very Low',
+          2: 'Low',
+          3: 'Medium',
+          4: 'High',
+          5: 'Very High'
+        };
+        return effectivenessMap[value] || 'Medium';
+      }
+      return value;
+    }
   },
   lastUsed: {
     type: Date,
@@ -49,4 +64,6 @@ const learningMethodSchema = new mongoose.Schema({
 // Add text index for search
 learningMethodSchema.index({ name: 'text', description: 'text' });
 
-module.exports = mongoose.model('LearningMethod', learningMethodSchema);
+const LearningMethod = mongoose.model('LearningMethod', learningMethodSchema);
+
+export default LearningMethod;

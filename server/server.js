@@ -7,6 +7,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import medicationRoutes from './routes/medications.js';
 import therapyRoutes from './routes/therapy.js';
 import healthFitnessRoutes from './routes/healthFitness.js';
+import learningRoutes from './routes/learning.js';
 import mongoose from 'mongoose'; // Added for health check
 
 dotenv.config();
@@ -75,6 +76,7 @@ app.use('/api/therapy', (req, res, next) => {
 });
 
 app.use('/api/health', healthFitnessRoutes);
+app.use('/api/learning', learningRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

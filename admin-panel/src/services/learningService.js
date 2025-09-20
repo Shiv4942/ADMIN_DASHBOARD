@@ -1,106 +1,210 @@
 import axios from 'axios';
+import { getApiUrl } from '../config/api';
 
-const API_URL = '/api/learning';
+const API_URL = getApiUrl('/learning');
+
+// Create axios instance with default config
+const api = axios.create({
+  withCredentials: true, // Include cookies in requests if needed
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Courses API
 const getCourses = async () => {
-  const response = await axios.get(`${API_URL}/courses`);
-  return response.data;
+  try {
+    const response = await api.get(`${API_URL}/courses`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching courses:', error);
+    throw error;
+  }
 };
 
 const getCourse = async (id) => {
-  const response = await axios.get(`${API_URL}/courses/${id}`);
-  return response.data;
+  try {
+    const response = await api.get(`${API_URL}/courses/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching course ${id}:`, error);
+    throw error;
+  }
 };
 
 const createCourse = async (courseData) => {
-  const response = await axios.post(`${API_URL}/courses`, courseData);
-  return response.data;
+  try {
+    const response = await api.post(`${API_URL}/courses`, courseData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating course:', error);
+    throw error;
+  }
 };
 
 const updateCourse = async (id, courseData) => {
-  const response = await axios.put(`${API_URL}/courses/${id}`, courseData);
-  return response.data;
+  try {
+    const response = await api.put(`${API_URL}/courses/${id}`, courseData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating course ${id}:`, error);
+    throw error;
+  }
 };
 
 const deleteCourse = async (id) => {
-  await axios.delete(`${API_URL}/courses/${id}`);
-  return id; // Return the deleted course ID
+  try {
+    await api.delete(`${API_URL}/courses/${id}`);
+    return id; // Return the deleted course ID
+  } catch (error) {
+    console.error(`Error deleting course ${id}:`, error);
+    throw error;
+  }
 };
 
 const getCourseStats = async () => {
-  const response = await axios.get(`${API_URL}/courses/stats`);
-  return response.data;
+  try {
+    const response = await api.get(`${API_URL}/courses/stats`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching course stats:', error);
+    throw error;
+  }
 };
 
 // Learning Methods API
 const getLearningMethods = async (params = {}) => {
-  const response = await axios.get(`${API_URL}/learning-methods`, { params });
-  return response.data;
+  try {
+    const response = await api.get(`${API_URL}/learning-methods`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching learning methods:', error);
+    throw error;
+  }
 };
 
 const getLearningMethod = async (id) => {
-  const response = await axios.get(`${API_URL}/learning-methods/${id}`);
-  return response.data;
+  try {
+    const response = await api.get(`${API_URL}/learning-methods/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching learning method ${id}:`, error);
+    throw error;
+  }
 };
 
 const createLearningMethod = async (methodData) => {
-  const response = await axios.post(`${API_URL}/learning-methods`, methodData);
-  return response.data;
+  try {
+    const response = await api.post(`${API_URL}/learning-methods`, methodData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating learning method:', error);
+    throw error;
+  }
 };
 
 const updateLearningMethod = async (id, methodData) => {
-  const response = await axios.put(`${API_URL}/learning-methods/${id}`, methodData);
-  return response.data;
+  try {
+    const response = await api.put(`${API_URL}/learning-methods/${id}`, methodData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating learning method ${id}:`, error);
+    throw error;
+  }
 };
 
 const deleteLearningMethod = async (id) => {
-  await axios.delete(`${API_URL}/learning-methods/${id}`);
-  return id;
+  try {
+    await api.delete(`${API_URL}/learning-methods/${id}`);
+    return id;
+  } catch (error) {
+    console.error(`Error deleting learning method ${id}:`, error);
+    throw error;
+  }
 };
 
 const getLearningMethodStats = async () => {
-  const response = await axios.get(`${API_URL}/learning-methods/stats`);
-  return response.data;
+  try {
+    const response = await api.get(`${API_URL}/learning-methods/stats`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching learning method stats:', error);
+    throw error;
+  }
 };
 
 // Skills API
 const getSkills = async (params = {}) => {
-  const response = await axios.get(`${API_URL}/skills`, { params });
-  return response.data;
+  try {
+    const response = await api.get(`${API_URL}/skills`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching skills:', error);
+    throw error;
+  }
 };
 
 const getSkill = async (id) => {
-  const response = await axios.get(`${API_URL}/skills/${id}`);
-  return response.data;
+  try {
+    const response = await api.get(`${API_URL}/skills/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching skill ${id}:`, error);
+    throw error;
+  }
 };
 
 const createSkill = async (skillData) => {
-  const response = await axios.post(`${API_URL}/skills`, skillData);
-  return response.data;
+  try {
+    const response = await api.post(`${API_URL}/skills`, skillData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating skill:', error);
+    throw error;
+  }
 };
 
 const updateSkill = async (id, skillData) => {
-  const response = await axios.put(`${API_URL}/skills/${id}`, skillData);
-  return response.data;
+  try {
+    const response = await api.put(`${API_URL}/skills/${id}`, skillData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating skill ${id}:`, error);
+    throw error;
+  }
 };
 
 const deleteSkill = async (id) => {
-  await axios.delete(`${API_URL}/skills/${id}`);
-  return id;
+  try {
+    await api.delete(`${API_URL}/skills/${id}`);
+    return id;
+  } catch (error) {
+    console.error(`Error deleting skill ${id}:`, error);
+    throw error;
+  }
 };
 
 const updateSkillPractice = async (id, confidence) => {
-  const response = await axios.patch(
-    `${API_URL}/skills/${id}/practice`,
-    { confidence }
-  );
-  return response.data;
+  try {
+    const response = await api.patch(
+      `${API_URL}/skills/${id}/practice`,
+      { confidence }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating skill practice for skill ${id}:`, error);
+    throw error;
+  }
 };
 
 const getSkillStats = async () => {
-  const response = await axios.get(`${API_URL}/skills/stats`);
-  return response.data;
+  try {
+    const response = await api.get(`${API_URL}/skills/stats`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching skill stats:', error);
+    throw error;
+  }
 };
 
 export {
@@ -108,6 +212,7 @@ export {
   getCourses,
   getCourse,
   createCourse,
+  updateCourse,
   deleteCourse,
   getCourseStats,
   

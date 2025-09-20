@@ -1,10 +1,11 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const skillSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false,
+    default: null
   },
   name: {
     type: String,
@@ -65,4 +66,6 @@ skillSchema.virtual('lastPracticedFormatted').get(function() {
   });
 });
 
-module.exports = mongoose.model('Skill', skillSchema);
+const Skill = mongoose.model('Skill', skillSchema);
+
+export default Skill;

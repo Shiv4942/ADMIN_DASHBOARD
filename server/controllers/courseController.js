@@ -1,12 +1,12 @@
-const Course = require('../models/Course');
-const { NotFoundError, BadRequestError } = require('../utils/errors');
+import Course from '../models/Course.js';
+import { NotFoundError, BadRequestError } from '../utils/errors.js';
 
-// @desc    Get all courses for a user
+// @desc    Get all courses
 // @route   GET /api/courses
-// @access  Private
-exports.getCourses = async (req, res, next) => {
+// @access  Public
+export const getCourses = async (req, res, next) => {
   try {
-    const courses = await Course.find({ userId: req.user._id }).sort('-createdAt');
+    const courses = await Course.find().sort('-createdAt');
     res.json(courses);
   } catch (error) {
     next(error);
@@ -15,13 +15,10 @@ exports.getCourses = async (req, res, next) => {
 
 // @desc    Get single course
 // @route   GET /api/courses/:id
-// @access  Private
-exports.getCourse = async (req, res, next) => {
+// @access  Public
+export const getCourse = async (req, res, next) => {
   try {
-    const course = await Course.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    const course = await Course.findById(req.params.id);
 
     if (!course) {
       throw new NotFoundError('Course not found');
@@ -35,8 +32,8 @@ exports.getCourse = async (req, res, next) => {
 
 // @desc    Create a course
 // @route   POST /api/courses
-// @access  Private
-exports.createCourse = async (req, res, next) => {
+// @access  Public
+export const createCourse = async (req, res, next) => {
   try {
     const { title, platform, instructor, progress, status, startDate, estimatedCompletion, notes, url } = req.body;
     
@@ -45,7 +42,6 @@ exports.createCourse = async (req, res, next) => {
     }
 
     const course = await Course.create({
-      userId: req.user._id,
       title,
       platform,
       instructor,
@@ -65,13 +61,13 @@ exports.createCourse = async (req, res, next) => {
 
 // @desc    Update a course
 // @route   PUT /api/courses/:id
-// @access  Private
-exports.updateCourse = async (req, res, next) => {
+// @access  Public
+export const updateCourse = async (req, res, next) => {
   try {
     const { title, platform, instructor, progress, status, startDate, estimatedCompletion, notes, url } = req.body;
 
-    const course = await Course.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
+    const course = await Course.findByIdAndUpdate(
+      req.params.id,
       {
         title,
         platform,
@@ -98,13 +94,10 @@ exports.updateCourse = async (req, res, next) => {
 
 // @desc    Delete a course
 // @route   DELETE /api/courses/:id
-// @access  Private
-exports.deleteCourse = async (req, res, next) => {
+// @access  Public
+export const deleteCourse = async (req, res, next) => {
   try {
-    const course = await Course.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    const course = await Course.findByIdAndDelete(req.params.id);
 
     if (!course) {
       throw new NotFoundError('Course not found');
@@ -118,13 +111,10 @@ exports.deleteCourse = async (req, res, next) => {
 
 // @desc    Get course statistics
 // @route   GET /api/courses/stats
-// @access  Private
-exports.getCourseStats = async (req, res, next) => {
+// @access  Public
+export const getCourseStats = async (req, res, next) => {
   try {
     const stats = await Course.aggregate([
-      {
-        $match: { userId: req.user._id }
-      },
       {
         $group: {
           _id: '$status',
@@ -133,19 +123,39 @@ exports.getCourseStats = async (req, res, next) => {
         }
       },
       {
-        $project: {
-          _id: 0,
-          status: '$_id',
-          count: 1,
-          averageProgress: { $round: ['$totalProgress', 2] }
+        $group: {
+          _id: null,
+          total: { $sum: '$count' },
+          stats: { $push: '$$ROOT' },
+          inProgress: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'In Progress'] }, '$count', 0]
+            }
+          },
+          completed: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'Completed'] }, '$count', 0]
+            }
+          },
+          notStarted: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'Not Started'] }, '$count', 0]
+            }
+          },
+          averageProgress: { $avg: '$totalProgress' }
         }
-      },
-      {
-        $sort: { status: 1 }
       }
     ]);
 
-    res.json(stats);
+    const result = stats[0] || {
+      total: 0,
+      inProgress: 0,
+      completed: 0,
+      notStarted: 0,
+      averageProgress: 0
+    };
+
+    res.json(result);
   } catch (error) {
     next(error);
   }

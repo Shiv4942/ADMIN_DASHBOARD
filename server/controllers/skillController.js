@@ -1,13 +1,13 @@
-const Skill = require('../models/Skill');
-const { NotFoundError, BadRequestError } = require('../utils/errors');
+import Skill from '../models/Skill.js';
+import { NotFoundError, BadRequestError } from '../utils/errors.js';
 
-// @desc    Get all skills for a user
+// @desc    Get all skills
 // @route   GET /api/skills
-// @access  Private
-exports.getSkills = async (req, res, next) => {
+// @access  Public
+export const getSkills = async (req, res, next) => {
   try {
     const { search, level, category, sortBy } = req.query;
-    const query = { userId: req.user._id };
+    const query = {};
     
     // Search functionality
     if (search) {
@@ -30,7 +30,7 @@ exports.getSkills = async (req, res, next) => {
       const parts = sortBy.split(':');
       sort[parts[0]] = parts[1] === 'desc' ? -1 : 1;
     } else {
-      sort.confidence = -1; // Default sort by confidence
+      sort.name = 1; // Default sort by name
     }
     
     const skills = await Skill.find(query).sort(sort);
@@ -42,13 +42,10 @@ exports.getSkills = async (req, res, next) => {
 
 // @desc    Get single skill
 // @route   GET /api/skills/:id
-// @access  Private
-exports.getSkill = async (req, res, next) => {
+// @access  Public
+export const getSkill = async (req, res, next) => {
   try {
-    const skill = await Skill.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    const skill = await Skill.findById(req.params.id);
 
     if (!skill) {
       throw new NotFoundError('Skill not found');
@@ -62,24 +59,23 @@ exports.getSkill = async (req, res, next) => {
 
 // @desc    Create a skill
 // @route   POST /api/skills
-// @access  Private
-exports.createSkill = async (req, res, next) => {
+// @access  Public
+export const createSkill = async (req, res, next) => {
   try {
-    const { name, level, confidence, category, description, tags } = req.body;
+    const { name, level, confidence, category, description, isActive, tags } = req.body;
     
     if (!name) {
       throw new BadRequestError('Name is required');
     }
 
     const skill = await Skill.create({
-      userId: req.user._id,
       name,
       level: level || 'Beginner',
       confidence: confidence || 0,
       category,
       description,
-      tags,
-      lastPracticed: new Date()
+      isActive: isActive !== undefined ? isActive : true,
+      tags: tags || []
     });
 
     res.status(201).json(skill);
@@ -90,22 +86,20 @@ exports.createSkill = async (req, res, next) => {
 
 // @desc    Update a skill
 // @route   PUT /api/skills/:id
-// @access  Private
-exports.updateSkill = async (req, res, next) => {
-  try {
-    const { name, level, confidence, category, description, tags } = req.body;
-    
-    const updates = {};
-    if (name) updates.name = name;
-    if (level) updates.level = level;
-    if (confidence !== undefined) updates.confidence = confidence;
-    if (category !== undefined) updates.category = category;
-    if (description !== undefined) updates.description = description;
-    if (tags !== undefined) updates.tags = tags;
+// @access  Public
+export const updateSkill = async (req, res, next) => {
+  const updates = Object.keys(req.body);
+  const allowedUpdates = ['name', 'level', 'confidence', 'category', 'description', 'isActive', 'tags'];
+  const isValidOperation = updates.every(update => allowedUpdates.includes(update));
 
-    const skill = await Skill.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      updates,
+  if (!isValidOperation) {
+    return next(new BadRequestError('Invalid updates!'));
+  }
+
+  try {
+    const skill = await Skill.findByIdAndUpdate(
+      req.params.id,
+      req.body,
       { new: true, runValidators: true }
     );
 
@@ -121,13 +115,10 @@ exports.updateSkill = async (req, res, next) => {
 
 // @desc    Delete a skill
 // @route   DELETE /api/skills/:id
-// @access  Private
-exports.deleteSkill = async (req, res, next) => {
+// @access  Public
+export const deleteSkill = async (req, res, next) => {
   try {
-    const skill = await Skill.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    const skill = await Skill.findByIdAndDelete(req.params.id);
 
     if (!skill) {
       throw new NotFoundError('Skill not found');
@@ -141,8 +132,8 @@ exports.deleteSkill = async (req, res, next) => {
 
 // @desc    Update skill last practiced date
 // @route   PATCH /api/skills/:id/practice
-// @access  Private
-exports.updateSkillPractice = async (req, res, next) => {
+// @access  Public
+export const updateSkillPractice = async (req, res, next) => {
   try {
     const { confidence } = req.body;
     
@@ -151,8 +142,8 @@ exports.updateSkillPractice = async (req, res, next) => {
       updates.confidence = Math.min(Math.max(confidence, 0), 100);
     }
 
-    const skill = await Skill.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
+    const skill = await Skill.findByIdAndUpdate(
+      req.params.id,
       updates,
       { new: true, runValidators: true }
     );
@@ -169,13 +160,10 @@ exports.updateSkillPractice = async (req, res, next) => {
 
 // @desc    Get skill statistics
 // @route   GET /api/skills/stats
-// @access  Private
-exports.getSkillStats = async (req, res, next) => {
+// @access  Public
+export const getSkillStats = async (req, res, next) => {
   try {
     const stats = await Skill.aggregate([
-      {
-        $match: { userId: req.user._id }
-      },
       {
         $group: {
           _id: '$level',
@@ -184,52 +172,45 @@ exports.getSkillStats = async (req, res, next) => {
         }
       },
       {
-        $project: {
-          _id: 0,
-          level: '$_id',
-          count: 1,
-          avgConfidence: { $round: ['$avgConfidence', 2] }
-        }
-      },
-      {
-        $sort: { level: 1 }
-      }
-    ]);
-
-    // Get total skills count
-    const totalSkills = await Skill.countDocuments({ userId: req.user._id });
-    
-    // Get skills by category
-    const byCategory = await Skill.aggregate([
-      {
-        $match: { 
-          userId: req.user._id,
-          category: { $exists: true, $ne: '' }
-        }
-      },
-      {
         $group: {
-          _id: '$category',
-          count: { $sum: 1 }
+          _id: null,
+          total: { $sum: '$count' },
+          stats: { $push: '$$ROOT' },
+          beginner: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'Beginner'] }, '$count', 0]
+            }
+          },
+          intermediate: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'Intermediate'] }, '$count', 0]
+            }
+          },
+          advanced: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'Advanced'] }, '$count', 0]
+            }
+          },
+          expert: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'Expert'] }, '$count', 0]
+            }
+          },
+          averageConfidence: { $avg: '$avgConfidence' }
         }
-      },
-      {
-        $project: {
-          _id: 0,
-          category: '$_id',
-          count: 1
-        }
-      },
-      {
-        $sort: { count: -1 }
       }
     ]);
 
-    res.json({
-      byLevel: stats,
-      totalSkills,
-      byCategory
-    });
+    const result = stats[0] || {
+      total: 0,
+      beginner: 0,
+      intermediate: 0,
+      advanced: 0,
+      expert: 0,
+      averageConfidence: 0
+    };
+
+    res.json(result);
   } catch (error) {
     next(error);
   }

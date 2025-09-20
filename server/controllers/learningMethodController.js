@@ -1,13 +1,13 @@
-const LearningMethod = require('../models/LearningMethod');
-const { NotFoundError, BadRequestError } = require('../utils/errors');
+import LearningMethod from '../models/LearningMethod.js';
+import { NotFoundError, BadRequestError } from '../utils/errors.js';
 
-// @desc    Get all learning methods for a user
+// @desc    Get all learning methods
 // @route   GET /api/learning-methods
-// @access  Private
-exports.getLearningMethods = async (req, res, next) => {
+// @access  Public
+export const getLearningMethods = async (req, res, next) => {
   try {
     const { search, effectiveness, sortBy } = req.query;
-    const query = { userId: req.user._id };
+    const query = {};
     
     // Search functionality
     if (search) {
@@ -37,13 +37,10 @@ exports.getLearningMethods = async (req, res, next) => {
 
 // @desc    Get single learning method
 // @route   GET /api/learning-methods/:id
-// @access  Private
-exports.getLearningMethod = async (req, res, next) => {
+// @access  Public
+export const getLearningMethod = async (req, res, next) => {
   try {
-    const method = await LearningMethod.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    const method = await LearningMethod.findById(req.params.id);
 
     if (!method) {
       throw new NotFoundError('Learning method not found');
@@ -57,22 +54,21 @@ exports.getLearningMethod = async (req, res, next) => {
 
 // @desc    Create a learning method
 // @route   POST /api/learning-methods
-// @access  Private
-exports.createLearningMethod = async (req, res, next) => {
+// @access  Public
+export const createLearningMethod = async (req, res, next) => {
   try {
-    const { name, timeSpent, effectiveness, description } = req.body;
+    const { name, timeSpent, effectiveness, description, isActive } = req.body;
     
     if (!name) {
       throw new BadRequestError('Name is required');
     }
 
     const method = await LearningMethod.create({
-      userId: req.user._id,
       name,
       timeSpent: timeSpent || { value: 0, unit: 'hours' },
       effectiveness: effectiveness || 'Medium',
       description,
-      lastUsed: new Date()
+      isActive: isActive !== undefined ? isActive : true
     });
 
     res.status(201).json(method);
@@ -83,21 +79,20 @@ exports.createLearningMethod = async (req, res, next) => {
 
 // @desc    Update a learning method
 // @route   PUT /api/learning-methods/:id
-// @access  Private
-exports.updateLearningMethod = async (req, res, next) => {
-  try {
-    const { name, timeSpent, effectiveness, description, lastUsed } = req.body;
-    
-    const updates = {};
-    if (name) updates.name = name;
-    if (timeSpent) updates.timeSpent = timeSpent;
-    if (effectiveness) updates.effectiveness = effectiveness;
-    if (description !== undefined) updates.description = description;
-    if (lastUsed) updates.lastUsed = lastUsed;
+// @access  Public
+export const updateLearningMethod = async (req, res, next) => {
+  const updates = Object.keys(req.body);
+  const allowedUpdates = ['name', 'timeSpent', 'effectiveness', 'description', 'isActive', 'lastUsed'];
+  const isValidOperation = updates.every(update => allowedUpdates.includes(update));
 
-    const method = await LearningMethod.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      updates,
+  if (!isValidOperation) {
+    return next(new BadRequestError('Invalid updates!'));
+  }
+
+  try {
+    const method = await LearningMethod.findByIdAndUpdate(
+      req.params.id,
+      req.body,
       { new: true, runValidators: true }
     );
 
@@ -113,13 +108,10 @@ exports.updateLearningMethod = async (req, res, next) => {
 
 // @desc    Delete a learning method
 // @route   DELETE /api/learning-methods/:id
-// @access  Private
-exports.deleteLearningMethod = async (req, res, next) => {
+// @access  Public
+export const deleteLearningMethod = async (req, res, next) => {
   try {
-    const method = await LearningMethod.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    const method = await LearningMethod.findByIdAndDelete(req.params.id);
 
     if (!method) {
       throw new NotFoundError('Learning method not found');
@@ -133,54 +125,63 @@ exports.deleteLearningMethod = async (req, res, next) => {
 
 // @desc    Get learning method statistics
 // @route   GET /api/learning-methods/stats
-// @access  Private
-exports.getLearningMethodStats = async (req, res, next) => {
+// @access  Public
+export const getLearningMethodStats = async (req, res, next) => {
   try {
     const stats = await LearningMethod.aggregate([
-      {
-        $match: { userId: req.user._id }
-      },
       {
         $group: {
           _id: '$effectiveness',
           count: { $sum: 1 },
-          totalTime: { 
+          totalTime: { $sum: '$timeSpent.value' }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$count' },
+          stats: { $push: '$$ROOT' },
+          veryHighEffectiveness: {
             $sum: {
-              $switch: {
-                branches: [
-                  { 
-                    case: { $eq: ['$timeSpent.unit', 'minutes'] },
-                    then: { $divide: ['$timeSpent.value', 60] }
-                  },
-                  { 
-                    case: { $eq: ['$timeSpent.unit', 'hours'] },
-                    then: '$timeSpent.value'
-                  },
-                  { 
-                    case: { $eq: ['$timeSpent.unit', 'days'] },
-                    then: { $multiply: ['$timeSpent.value', 24] }
-                  }
-                ],
-                default: 0
-              }
+              $cond: [{ $eq: ['$_id', 'Very High'] }, '$count', 0]
             }
-          }
+          },
+          highEffectiveness: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'High'] }, '$count', 0]
+            }
+          },
+          mediumEffectiveness: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'Medium'] }, '$count', 0]
+            }
+          },
+          lowEffectiveness: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'Low'] }, '$count', 0]
+            }
+          },
+          veryLowEffectiveness: {
+            $sum: {
+              $cond: [{ $eq: ['$_id', 'Very Low'] }, '$count', 0]
+            }
+          },
+          totalTimeSpent: { $sum: '$totalTime' }
         }
-      },
-      {
-        $project: {
-          _id: 0,
-          effectiveness: '$_id',
-          count: 1,
-          totalHours: { $round: ['$totalTime', 2] }
-        }
-      },
-      {
-        $sort: { effectiveness: 1 }
       }
     ]);
 
-    res.json(stats);
+    const result = stats[0] || {
+      total: 0,
+      veryHighEffectiveness: 0,
+      highEffectiveness: 0,
+      mediumEffectiveness: 0,
+      lowEffectiveness: 0,
+      veryLowEffectiveness: 0,
+      totalTimeSpent: 0
+    };
+
+    res.json(result);
   } catch (error) {
     next(error);
   }
