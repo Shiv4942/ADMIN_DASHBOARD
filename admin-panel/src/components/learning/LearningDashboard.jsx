@@ -718,7 +718,7 @@ const LearningDashboard = () => {
             </div>
             <div className="ml-5">
               <h4 className="text-2xl font-semibold text-gray-700">
-                {loading.stats ? '...' : stats.learningMethods}
+                {loading.stats ? '...' : stats.totalMethods}
               </h4>
               <div className="text-gray-500">Learning Methods</div>
             </div>
