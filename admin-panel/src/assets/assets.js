@@ -47,7 +47,7 @@ export const medicine = [
 export const projectlist = [
   {
     name: "Website Redisign",
-    state: Active,
+    state: "Active",
     time: "Aug 20",
     img: Pro,
     progress: "50%",

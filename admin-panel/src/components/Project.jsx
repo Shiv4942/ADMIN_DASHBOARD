@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { projectlist, taskmanagementlist } from "../assets/assets";
 
-const Project = ({state}) => {
+const Project = () => {
     const [color , setcolor] = useState('gray')
   return (
     <div className="h-screen">
@@ -41,7 +41,7 @@ const Project = ({state}) => {
               {item.state}
               
             </p>
-            <p className="">{item.time}</p>
+         <p className="">{item.time}</p>
             <img src={item.img} alt="" className="w-10" />
             <p className="flex w-sm justify-between items-center">
               <span className="">Progress</span>
