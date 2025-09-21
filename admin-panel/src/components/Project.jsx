@@ -145,8 +145,11 @@ const Project = () => {
       
       // Refresh project details if viewing details
       if (currentProject) {
-        const project = await projectService.getProjectById(currentProject._id);
-        setProjectDetails(project);
+        const tasks = await taskService.getTasksByProject(currentProject._id);
+        setProjectDetails(prev => ({
+          ...prev,
+          tasks: tasks || []
+        }));
       }
       
       // Refresh projects list to update task counts
@@ -162,9 +165,17 @@ const Project = () => {
   const viewProjectDetails = async (project) => {
     try {
       setLoading(true);
+      // First get the project details
       const details = await projectService.getProjectById(project._id);
-      setProjectDetails(details);
-      setCurrentProject(details);
+      // Then get the tasks for this project
+      const tasks = await taskService.getTasksByProject(project._id);
+      // Combine the data
+      const projectWithTasks = {
+        ...details,
+        tasks: tasks || []
+      };
+      setProjectDetails(projectWithTasks);
+      setCurrentProject(projectWithTasks);
       setShowTaskModal(true);
     } catch (error) {
       console.error("Error fetching project details:", error);
