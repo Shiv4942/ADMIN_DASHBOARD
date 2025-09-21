@@ -17,22 +17,34 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS configuration
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
+    
+    // Allow all Vercel deployment URLs (pattern: https://*.vercel.app)
+    const vercelPattern = /^https?:\/\/([a-z0-9-]+\.)*vercel\.app$/;
     
     const allowedOrigins = [
       'http://localhost:5173', // Development
       'http://localhost:3000', // Alternative dev port
       'http://localhost:5174', // Vite dev server
-      'https://admin-dashboard-e3nfv3xk7-shiv4942s-projects.vercel.app', // Vercel frontend
-      'https://admin-dashboard-git-master-shiv4942s-projects.vercel.app', // Vercel frontend
       'https://admin-dashboard-qdgo.onrender.com', // Your backend domain
       'http://127.0.0.1:5173' // Localhost with IP
     ];
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Check if the origin matches any allowed origin or the Vercel pattern
+    const isVercelOrigin = vercelPattern.test(origin);
+    const isAllowedOrigin = allowedOrigins.some(allowedOrigin => {
+      // Handle wildcard in the middle of the string
+      if (allowedOrigin.includes('*')) {
+        const regex = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
+        return regex.test(origin);
+      }
+      return origin === allowedOrigin;
+    });
+    
+    if (isVercelOrigin || isAllowedOrigin) {
       callback(null, true);
     } else {
       console.log('Blocked origin:', origin);
@@ -44,7 +56,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   preflightContinue: false,
   optionsSuccessStatus: 204
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
 app.options('*', cors());
