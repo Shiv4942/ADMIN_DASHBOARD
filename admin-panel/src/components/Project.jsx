@@ -344,8 +344,8 @@ const Project = () => {
         {/* Task Modal */}
         {showTaskModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
-              <div className="p-6 flex-shrink-0">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-sm max-h-[80vh] flex flex-col">
+              <div className="p-4 flex-shrink-0">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-800">
                     {projectDetails ? `${projectDetails.name} - Tasks` : 'Add New Task'}
@@ -483,19 +483,19 @@ const Project = () => {
 
               {/* Scrollable tasks list */}
               <div className="border-t border-gray-200 overflow-y-auto flex-1">
-                <div className="p-6">
+                <div className="p-4">
                   {projectDetails?.tasks?.length > 0 ? (
                     <div>
-                      <h3 className="font-medium text-gray-800 mb-3">Tasks ({projectDetails.tasks.length})</h3>
-                      <div className="space-y-3">
+                      <h3 className="font-medium text-gray-800 mb-2 text-sm">Tasks ({projectDetails.tasks.length})</h3>
+                      <div className="space-y-2">
                         {projectDetails.tasks.map((task) => (
-                          <div key={task._id} className="p-3 bg-gray-50 rounded-lg border border-gray-100 hover:shadow-sm transition-shadow">
+                          <div key={task._id} className="p-2 bg-gray-50 rounded-md border border-gray-100 hover:shadow-sm transition-shadow text-sm">
                             <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="font-medium text-gray-800">{task.title}</h4>
-                                {task.description && <p className="text-sm text-gray-600 mt-1">{task.description}</p>}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-gray-800 truncate">{task.title}</h4>
+                                {task.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{task.description}</p>}
                               </div>
-                              <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
+                              <span className={`px-1.5 py-0.5 text-[10px] rounded-full whitespace-nowrap ml-2 ${
                                 task.status === 'Completed' ? 'bg-green-100 text-green-800' :
                                 task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
                                 task.status === 'In Review' ? 'bg-yellow-100 text-yellow-800' :
@@ -505,9 +505,9 @@ const Project = () => {
                               </span>
                             </div>
                             {task.priority && (
-                              <div className="mt-2 flex items-center text-xs text-gray-500">
+                              <div className="mt-1 flex items-center text-[10px] text-gray-500">
                                 <span>Priority:</span>
-                                <span className={`ml-1 px-2 py-0.5 rounded ${
+                                <span className={`ml-1 px-1.5 py-0.5 rounded ${
                                   task.priority === 'High' ? 'bg-red-100 text-red-800' :
                                   task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                                   'bg-green-100 text-green-800'
@@ -603,9 +603,9 @@ const Project = () => {
                               </span>
                             </div>
                             {task.priority && (
-                              <div className="mt-2 flex items-center text-xs text-gray-500">
+                              <div className="mt-1 flex items-center text-[10px] text-gray-500">
                                 <span>Priority:</span>
-                                <span className={`ml-1 px-2 py-0.5 rounded ${
+                                <span className={`ml-1 px-1.5 py-0.5 rounded ${
                                   task.priority === 'High' ? 'bg-red-100 text-red-800' :
                                   task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                                   'bg-green-100 text-green-800'
