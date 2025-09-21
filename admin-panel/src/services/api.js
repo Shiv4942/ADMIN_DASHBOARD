@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://admin-dashboard-qdgo.onrender.com/api' | 'http://localhost:5000/api';
 
 // Set up default config for axios
 const api = axios.create({
