@@ -5,11 +5,11 @@ import { connectToDatabase } from './db.js';
 import financeRoutes from './routes/finance.js';
 import dashboardRoutes from './routes/dashboard.js';
 import medicationRoutes from './routes/medications.js';
+import projectRoutes from './routes/projectRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
 import therapyRoutes from './routes/therapy.js';
 import healthFitnessRoutes from './routes/healthFitness.js';
 import learningRoutes from './routes/learning.js';
-import projectRoutes from './routes/projectRoutes.js';
-import taskRoutes from './routes/taskRoutes.js';
 import mongoose from 'mongoose'; // Added for health check
 
 dotenv.config();
@@ -82,6 +82,8 @@ app.use(express.json());
 app.use('/api/finance', financeRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/medications', medicationRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Support both /api/therapy and /api/therapies for backward compatibility
 app.use('/api/therapies', therapyRoutes);
