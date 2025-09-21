@@ -117,25 +117,5 @@ export const taskmanagementlist = [
     2: "Customer research",
     img2: Pro2,
   },
-  {
-    name: "To Do",
-    1: "Creation wireframes",
-    img1: Pro,
-    2: "Customer research",
-    img2: Pro2,
-  },
-  {
-    name: "Done",
-    1: "Creation wireframes",
-    img1: Pro,
-    2: "Customer research",
-    img2: Pro2,
-  },
-  {
-    name: "In Progress",
-    1: "Creation wireframes",
-    img1: Pro,
-    2: "Customer research",
-    img2: Pro2,
-  },
+  
 ];
