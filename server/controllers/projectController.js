@@ -24,7 +24,7 @@ const getProjects = asyncHandler(async (req, res) => {
 // @route   GET /api/projects/:id
 // @access  Private
 const getProjectById = asyncHandler(async (req, res) => {
-  const project = await Project.findById(req.params.id).populate('tasks');
+  const project = await Project.findById(req.params.id);
   
   if (project) {
     res.json(project);

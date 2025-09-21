@@ -343,9 +343,9 @@ const Project = () => {
 
         {/* Task Modal */}
         {showTaskModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-              <div className="p-6">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+              <div className="p-6 flex-shrink-0">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-800">
                     {projectDetails ? `${projectDetails.name} - Tasks` : 'Add New Task'}
@@ -375,7 +375,7 @@ const Project = () => {
                   </div>
                 )}
                 
-                <form onSubmit={handleTaskSubmit}>
+                <form onSubmit={handleTaskSubmit} className="mb-6">
                   {!projectDetails && (
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -479,46 +479,51 @@ const Project = () => {
                     </button>
                   </div>
                 </form>
-                
-                {projectDetails?.tasks?.length > 0 ? (
-                  <div className="mt-6">
-                    <h3 className="font-medium text-gray-800 mb-3">Tasks ({projectDetails.tasks.length})</h3>
-                    <div className="space-y-3">
-                      {projectDetails.tasks.map((task) => (
-                        <div key={task._id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-gray-800">{task.title}</h4>
-                              {task.description && <p className="text-sm text-gray-600 mt-1">{task.description}</p>}
-                            </div>
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              task.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                              task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                              task.status === 'In Review' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {task.status}
-                            </span>
-                          </div>
-                          {task.priority && (
-                            <div className="mt-2 flex items-center text-xs text-gray-500">
-                              <span>Priority:</span>
-                              <span className={`ml-1 px-2 py-0.5 rounded ${
-                                task.priority === 'High' ? 'bg-red-100 text-red-800' :
-                                task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-green-100 text-green-800'
+              </div>
+
+              {/* Scrollable tasks list */}
+              <div className="border-t border-gray-200 overflow-y-auto flex-1">
+                <div className="p-6">
+                  {projectDetails?.tasks?.length > 0 ? (
+                    <div>
+                      <h3 className="font-medium text-gray-800 mb-3">Tasks ({projectDetails.tasks.length})</h3>
+                      <div className="space-y-3">
+                        {projectDetails.tasks.map((task) => (
+                          <div key={task._id} className="p-3 bg-gray-50 rounded-lg border border-gray-100 hover:shadow-sm transition-shadow">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-medium text-gray-800">{task.title}</h4>
+                                {task.description && <p className="text-sm text-gray-600 mt-1">{task.description}</p>}
+                              </div>
+                              <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
+                                task.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                task.status === 'In Review' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
                               }`}>
-                                {task.priority}
+                                {task.status}
                               </span>
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            {task.priority && (
+                              <div className="mt-2 flex items-center text-xs text-gray-500">
+                                <span>Priority:</span>
+                                <span className={`ml-1 px-2 py-0.5 rounded ${
+                                  task.priority === 'High' ? 'bg-red-100 text-red-800' :
+                                  task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {task.priority}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500 mt-4">No tasks yet. Add a task to get started!</p>
-                )}
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">No tasks yet. Add a task to get started!</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -735,15 +740,8 @@ const Project = () => {
           </div>
         )}
 
-        {/* Toast Container */}
-        <div className="fixed top-4 right-4 z-50">
-          {toast(
-            <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4">
-              <p>Project saved successfully!</p>
-            </div>,
-            { position: "top-right", autoClose: 3000 }
-          )}
-        </div>
+        {/* Toast Container - This is just a placeholder, actual toast is configured in App.js */}
+        <div className="fixed top-4 right-4 z-50" />
       </div>
     </div>
   );
