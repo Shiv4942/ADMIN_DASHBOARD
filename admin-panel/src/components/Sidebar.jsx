@@ -14,7 +14,7 @@ const Sidebar = ({ activeSection, setActiveSection }) => {
     { id: 'learning-tools', label: 'Learning Tools', icon: '📚' },
     { id: 'finances', label: 'Finances Overview', icon: '💰' },
     { id: 'medication', label: 'Drug & Medication', icon: '➕' },
-    { id: 'project', label: 'Project', icon: '🗂️' },
+    { id: 'project', label: 'Project Management', icon: '🗂️' },
     
   ];
 

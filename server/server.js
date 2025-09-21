@@ -8,6 +8,8 @@ import medicationRoutes from './routes/medications.js';
 import therapyRoutes from './routes/therapy.js';
 import healthFitnessRoutes from './routes/healthFitness.js';
 import learningRoutes from './routes/learning.js';
+import projectRoutes from './routes/projectRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
 import mongoose from 'mongoose'; // Added for health check
 
 dotenv.config();
@@ -77,6 +79,8 @@ app.use('/api/therapy', (req, res, next) => {
 
 app.use('/api/health', healthFitnessRoutes);
 app.use('/api/learning', learningRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -93,7 +97,13 @@ app.get('/health', (req, res) => {
       '/api/health/goals/:id - GET/PUT/DELETE',
       '/api/health/diet-logs - GET/POST',
       '/api/health/diet-logs/stats - GET',
-      '/api/health/diet-logs/:id - GET/PUT/DELETE'
+      '/api/health/diet-logs/:id - GET/PUT/DELETE',
+      '/api/projects - GET/POST',
+      '/api/projects/:id - GET/PUT/DELETE',
+      '/api/tasks - POST',
+      '/api/tasks/project/:projectId - GET',
+      '/api/tasks/:id - GET/PUT/DELETE',
+      '/api/tasks/:id/status - PATCH'
     ]
   });
 });
