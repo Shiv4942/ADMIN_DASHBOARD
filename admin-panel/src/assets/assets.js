@@ -66,33 +66,7 @@ export const projectlist = [
     img: Pro,
     progress: "35",
   },
-  {
-    name: "Website Redisign",
-    state: "Active",
-    time: "Aug 20",
-    img: Pro2,
-    progress: "50%",
-  },
-  {
-    name: "Mobile App",
-    state: "Completed",
-    time: "june 15",
-    img:Pro,
-    progress: "100%",
-  },{
-    name: "Website Redisign",
-    state: "Active",
-    time: "Aug 20",
-    img: Pro2,
-    progress: "50%",
-  },
-  {
-    name: "Mobile App",
-    state: "Completed",
-    time: "june 15",
-    img:Pro,
-    progress: "100%",
-  },
+ 
 ];
 
 export const taskmanagementlist = [
