@@ -354,11 +354,11 @@ const Project = () => {
 
         {/* Task Modal */}
         {showTaskModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-sm max-h-[90vh] flex flex-col">
-              <div className="p-4 border-b border-gray-200">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-xs max-h-[85vh] flex flex-col">
+              <div className="p-3 border-b border-gray-200">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-lg font-semibold text-gray-800 truncate max-w-[200px]">
                     {projectDetails ? `${projectDetails.name} - Tasks` : 'Add New Task'}
                   </h2>
                   <button 
@@ -373,20 +373,20 @@ const Project = () => {
                 </div>
                 
                 {projectDetails && (
-                  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-medium text-gray-800">{projectDetails.name}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{projectDetails.description}</p>
-                    <div className="mt-2 flex items-center text-sm text-gray-500">
-                      <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(projectDetails.status)}`}>
+                  <div className="mb-4 p-3 bg-gray-50 rounded-md text-sm">
+                    <h3 className="font-medium text-gray-800 text-sm truncate">{projectDetails.name}</h3>
+                    <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{projectDetails.description}</p>
+                    <div className="mt-1.5 flex items-center text-xs text-gray-500">
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${getStatusColor(projectDetails.status)}`}>
                         {projectDetails.status}
                       </span>
-                      <span className="mx-2">•</span>
+                      <span className="mx-1.5">•</span>
                       <span>Progress: {projectDetails.progress || 0}%</span>
                     </div>
                   </div>
                 )}
                 
-                <form onSubmit={handleTaskSubmit} className="mb-6">
+                <form onSubmit={handleTaskSubmit} className="mb-4">
                   {!projectDetails && (
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -478,13 +478,13 @@ const Project = () => {
                         setShowTaskModal(false);
                         setProjectDetails(null);
                       }}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500"
                     >
                       {projectDetails ? 'Add Task' : 'Create Task'}
                     </button>
@@ -492,9 +492,9 @@ const Project = () => {
                 </form>
               </div>
 
-              {/* Scrollable container */}
+              {/* Task List Section */}
               <div className="overflow-y-auto flex-1">
-                <div className="p-4 space-y-4">
+                <div className="p-3 space-y-3">
                   {/* Scroll to tasks button */}
                   {projectDetails?.tasks?.length > 0 && (
                     <button 
@@ -504,24 +504,19 @@ const Project = () => {
                           taskList.scrollIntoView({ behavior: 'smooth' });
                         }
                       }}
-                      className="w-full py-2 text-sm text-blue-600 hover:text-blue-800 font-medium border-b border-gray-100"
+                      className="w-full py-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium border-b border-gray-100"
                     >
                       ↓ View Tasks ({projectDetails.tasks.length})
                     </button>
                   )}
                   
-                  {/* Task Form */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-medium text-gray-800 mb-3">Add New Task</h3>
-                  </div>
-                  
                   {/* Task List Section */}
                   {projectDetails?.tasks?.length > 0 ? (
-                    <div id="task-list" className="pt-4 mt-4 border-t border-gray-100">
-                      <h3 className="font-medium text-gray-800 mb-2 text-sm">Tasks ({projectDetails.tasks.length})</h3>
-                      <div className="space-y-2">
+                    <div id="task-list" className="pt-3 mt-3 border-t border-gray-100">
+                      <h3 className="font-medium text-gray-800 mb-1.5 text-xs">Tasks ({projectDetails.tasks.length})</h3>
+                      <div className="space-y-1.5">
                         {projectDetails.tasks.map((task) => (
-                          <div key={task._id} className="p-2 bg-white rounded-md border border-gray-100 hover:shadow-sm transition-shadow text-sm">
+                          <div key={task._id} className="p-1.5 bg-white rounded border border-gray-100 hover:shadow-sm transition-shadow text-xs">
                             <div className="flex justify-between items-start">
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-gray-800 truncate">{task.title}</h4>
@@ -555,7 +550,7 @@ const Project = () => {
                       {/* Back to top button */}
                       <button 
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        className="w-full py-2 text-sm text-blue-600 hover:text-blue-800 font-medium mt-4 border-t border-gray-100"
+                        className="w-full py-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium mt-3 border-t border-gray-100"
                       >
                         ↑ Back to Top
                       </button>
