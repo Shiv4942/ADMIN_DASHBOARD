@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   FINANCE: `${API_BASE_URL}/finance`,
   MEDICATIONS: `${API_BASE_URL}/medications`,
   THERAPY: `${API_BASE_URL}/therapies`,
+  ACTIVITIES: `${API_BASE_URL}/activities`,
 };
 
 // Helper function to get full API URL

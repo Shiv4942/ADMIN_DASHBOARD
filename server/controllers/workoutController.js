@@ -1,18 +1,47 @@
 import Workout from '../models/Workout.js';
 import asyncHandler from 'express-async-handler';
+import { createActivity } from './activityController.js';
 
 // @desc    Create a new workout
 // @route   POST /api/workouts
 export const createWorkout = asyncHandler(async (req, res) => {
+  console.log('Request body:', req.body); // Debug log
   const { type, duration, calories, notes } = req.body;
   
+  // Validate required fields
+  if (!type || !duration) {
+    res.status(400);
+    throw new Error('Please provide type and duration for the workout');
+  }
+  
   const workout = await Workout.create({
-    type,
+    type: type || 'general', // Provide a default value if type is undefined
     duration,
-    calories,
-    notes,
+    calories: calories || 0,
+    notes: notes || '',
     userId: 'public' // Default userId since we're not using authentication yet
   });
+
+  // Create an activity for the workout
+  const activityData = {
+    type: 'workout',
+    title: 'Workout Completed',
+    description: `Completed ${type || 'a workout'} for ${duration} minutes`,
+    userId: 'public',
+    metadata: {
+      workoutId: workout._id,
+      duration: duration,
+      calories: calories || 0,
+      workoutType: type || 'general'
+    }
+  };
+  
+  console.log('Creating activity with data:', activityData); // Debug log
+  try {
+    await createActivity(activityData);
+  } catch (error) {
+    console.error('Error creating activity:', error);
+  }
 
   res.status(201).json(workout);
 });

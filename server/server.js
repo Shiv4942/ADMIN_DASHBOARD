@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import http from 'http';
+import { initWebSocket, broadcastActivity } from './utils/websocket.js';
 import { connectToDatabase } from './db.js';
 import financeRoutes from './routes/finance.js';
 import dashboardRoutes from './routes/dashboard.js';
@@ -10,11 +12,19 @@ import taskRoutes from './routes/taskRoutes.js';
 import therapyRoutes from './routes/therapy.js';
 import healthFitnessRoutes from './routes/healthFitness.js';
 import learningRoutes from './routes/learning.js';
+import activityRoutes from './routes/activityRoutes.js';
 import mongoose from 'mongoose'; // Added for health check
 
 dotenv.config();
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Initialize WebSocket server
+initWebSocket(server);
+
+// Export the broadcast function for use in routes
+export { broadcastActivity };
 
 // CORS configuration
 const corsOptions = {
@@ -79,14 +89,15 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 // Routes
-app.use('/api/finance', financeRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/finance', financeRoutes);
 app.use('/api/medications', medicationRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
-
-// Support both /api/therapy and /api/therapies for backward compatibility
 app.use('/api/therapies', therapyRoutes);
+app.use('/api/health-fitness', healthFitnessRoutes);
+app.use('/api/learning', learningRoutes);
+app.use('/api/activities', activityRoutes);
 app.use('/api/therapy', (req, res, next) => {
   // Redirect /api/therapy/* to /api/therapies/*
   const newPath = req.path.replace(/^\/api\/therapy/, '/api/therapies');
@@ -132,7 +143,7 @@ const start = async () => {
     } else {
       console.warn('MONGODB_URI not set; running without DB');
     }
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   } catch (err) {
