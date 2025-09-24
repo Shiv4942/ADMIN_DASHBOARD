@@ -29,7 +29,6 @@ const activityIcons = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const API_BASE = 'https://admin-dashboard-qdgo.onrender.com/api';
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
