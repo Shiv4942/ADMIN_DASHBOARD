@@ -1,10 +1,5 @@
-// API Configuration for different environments
-const isDevelopment = import.meta.env.DEV;
-
-// Base API URL
-export const API_BASE_URL = isDevelopment 
-  ? 'http://localhost:5000/api'  // Development - local backend
-  : 'https://admin-dashboard-qdgo.onrender.com/api'; // Production - deployed backend
+// API Configuration - using the deployed backend on Render
+export const API_BASE_URL = 'https://admin-dashboard-qdgo.onrender.com/api';
 
 // API endpoints
 export const API_ENDPOINTS = {
