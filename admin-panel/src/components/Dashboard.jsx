@@ -93,17 +93,20 @@ const Dashboard = () => {
   ]);
 
   // Fetch dashboard data function
-  const fetchDashboardData = useCallback(async (signal) => {
+  const fetchDashboardData = useCallback(async (abortSignal) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      const dashboardRes = await fetch(`${API_ENDPOINTS.DASHBOARD}/overview?page=${currentPage}&limit=${activitiesPerPage}`, {
+      const controller = new AbortController();
+      const signal = abortSignal || controller.signal;
+      
+      const dashboardRes = await fetch(`${API_ENDPOINTS.DASHBOARD.OVERVIEW}?page=${currentPage}&limit=${activitiesPerPage}`, {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         },
-        signal
+        signal: signal
       });
 
       if (!dashboardRes.ok) {
