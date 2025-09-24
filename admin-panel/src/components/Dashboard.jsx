@@ -382,14 +382,6 @@ const Dashboard = () => {
               </button>
             </div>
           )}
-          
-          {/* WebSocket status indicator */}
-          {ws && ws.readyState === WebSocket.OPEN && (
-            <div className="mt-4 text-xs text-green-600 flex items-center">
-              <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
-              Live updates active
-            </div>
-          )}
         </div>
       </div>
     </div>
