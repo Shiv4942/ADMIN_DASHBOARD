@@ -3,7 +3,10 @@ export const API_BASE_URL = 'https://admin-dashboard-qdgo.onrender.com/api';
 
 // API endpoints
 export const API_ENDPOINTS = {
-  DASHBOARD: `${API_BASE_URL}/dashboard`,
+  DASHBOARD: {
+    OVERVIEW: `${API_BASE_URL}/dashboard/overview`,
+    REFRESH: `${API_BASE_URL}/dashboard/refresh`
+  },
   FINANCE: `${API_BASE_URL}/finance`,
   MEDICATIONS: `${API_BASE_URL}/medications`,
   THERAPY: `${API_BASE_URL}/therapies`,

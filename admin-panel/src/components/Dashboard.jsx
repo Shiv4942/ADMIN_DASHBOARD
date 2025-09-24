@@ -29,7 +29,7 @@ const activityIcons = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const API_BASE = API_ENDPOINTS.DASHBOARD;
+  const API_BASE = 'https://admin-dashboard-qdgo.onrender.com/api';
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -92,7 +92,7 @@ const Dashboard = () => {
       
       // Fetch dashboard data with pagination
       const response = await fetch(
-        `${API_BASE}/overview?page=${currentPage}&limit=${activitiesPerPage}`
+        `${API_ENDPOINTS.DASHBOARD.OVERVIEW}?page=${currentPage}&limit=${activitiesPerPage}`
       );
 
       if (!response.ok) {
