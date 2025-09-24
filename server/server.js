@@ -34,7 +34,9 @@ const corsOptions = {
       'http://localhost:3000', // Alternative dev port
       'http://localhost:5174', // Vite dev server
       'https://admin-dashboard-qdgo.onrender.com', // Your backend domain
-      'http://127.0.0.1:5173' // Localhost with IP
+      'http://127.0.0.1:5173', // Localhost with IP
+      'https://admin-dashboard-git-master-shiv4942s-projects.vercel.app', // Vercel deployment
+      'https://admin-dashboard-shiv4942s-projects.vercel.app' // Vercel deployment pattern
     ];
     
     // Check if the origin matches any allowed origin or the Vercel pattern
@@ -56,10 +58,23 @@ const corsOptions = {
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Cache-Control',
+    'Pragma',
+    'Accept',
+    'Accept-Encoding',
+    'Accept-Language',
+    'Referer',
+    'User-Agent'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Total-Count'],
   preflightContinue: false,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
+  maxAge: 86400 // 24 hours
 };
 
 app.use(cors(corsOptions));
