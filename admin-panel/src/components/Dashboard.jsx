@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config/api';
 import { 
@@ -14,9 +14,14 @@ import {
   ExclamationCircleIcon,
   AcademicCapIcon,
   DocumentTextIcon,
-  ChartBarIcon,
-  UserIcon
+  UserIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
+
+// Skeleton Loader Component
+const SkeletonLoader = ({ className = '' }) => (
+  <div className={`animate-pulse bg-gray-200 rounded ${className}`}></div>
+);
 
 // Activity type to icon mapping
 const activityIcons = {
@@ -30,7 +35,9 @@ const activityIcons = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const [stats, setStats] = useState({
     totalWorkouts: 0,
@@ -49,6 +56,7 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const activitiesPerPage = 5;
+
   const [quickActions] = useState([
     { 
       id: 1, 
@@ -63,7 +71,7 @@ const Dashboard = () => {
       title: 'Analyze Income', 
       icon: CheckCircleIcon, 
       color: 'bg-green-500',
-      action: 'meals',
+      action: 'finances',
       path: '/finances/new'
     },
     { 
@@ -84,23 +92,26 @@ const Dashboard = () => {
     }
   ]);
 
-  const fetchDashboardData = async () => {
+  // Fetch dashboard data function
+  const fetchDashboardData = useCallback(async (signal) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Fetch dashboard data with pagination
-      const response = await fetch(
-        `${API_ENDPOINTS.DASHBOARD.OVERVIEW}?page=${currentPage}&limit=${activitiesPerPage}`
-      );
+      const dashboardRes = await fetch(`${API_ENDPOINTS.DASHBOARD}/overview?page=${currentPage}&limit=${activitiesPerPage}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        signal
+      });
 
-      if (!response.ok) {
+      if (!dashboardRes.ok) {
         throw new Error('Failed to fetch dashboard data');
       }
 
-      const data = await response.json();
+      const data = await dashboardRes.json();
       
-      // Update stats with the data from the backend
       setStats({
         totalWorkouts: data.stats?.totalWorkouts || 0,
         coursesCompleted: data.stats?.coursesCompleted || 0,
@@ -114,43 +125,41 @@ const Dashboard = () => {
         }
       });
       
-      // Update recent activities and pagination info
       setRecentActivities(data.recentActivities || []);
       setTotalPages(data.totalPages || 1);
+      setLastUpdated(new Date().toLocaleTimeString());
+      
     } catch (err) {
-      console.error('Error loading dashboard:', err);
-      setError('Failed to load dashboard data. Please try again later.');
+      if (err.name !== 'AbortError') {
+        console.error('Error loading dashboard:', err);
+        setError('Failed to load dashboard data. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
+  }, [currentPage, activitiesPerPage]);
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchDashboardData();
   };
 
-  const handleAction = async (action, path) => {
+  // Handle quick actions
+  const handleAction = (action) => {
     try {
-      // If there's a path, navigate to it instead of making an API call
-      if (path) {
-        navigate(path);
-        return;
+      if (action.path) {
+        navigate(action.path);
+      } else {
+        console.warn('No path specified for action:', action.action);
       }
-      
-      // Keep the existing API call for backward compatibility
-      const res = await fetch(`${API_BASE}/actions/${action}`, { 
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (!res.ok) throw new Error('Action failed');
-      
-      // Refresh data after successful action
-      await fetchDashboardData();
     } catch (err) {
-      console.error('Action failed:', err);
-      // Show error toast or notification
+      console.error('Navigation failed:', err);
     }
   };
 
+  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -160,6 +169,7 @@ const Dashboard = () => {
     }).format(amount);
   };
 
+  // Render stat card
   const renderStatCard = (title, value, icon, change, isCurrency = false) => {
     const isPositive = change >= 0;
     
@@ -170,14 +180,14 @@ const Dashboard = () => {
             <p className="text-sm font-medium text-gray-500">{title}</p>
             <div className="mt-1">
               {isLoading ? (
-                <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+                <SkeletonLoader className="h-8 w-20" />
               ) : (
                 <span className="text-2xl font-semibold text-gray-900">
-                  {isCurrency ? formatCurrency(value) : value}
+                  {isCurrency ? formatCurrency(value) : value.toLocaleString()}
                 </span>
               )}
             </div>
-            {!isLoading && !isNaN(change) && (
+            {!isLoading && !isNaN(change) && change !== 0 && (
               <div className={`mt-2 flex items-center text-sm ${
                 isPositive ? 'text-green-600' : 'text-red-600'
               }`}>
@@ -190,10 +200,12 @@ const Dashboard = () => {
               </div>
             )}
           </div>
-          <div className={`p-3 rounded-lg ${icon === BookOpenIcon ? 'bg-blue-50 text-blue-600' : 
-                           icon === BoltIcon ? 'bg-purple-50 text-purple-600' : 
-                           icon === CurrencyDollarIcon ? 'bg-green-50 text-green-600' : 
-                           'bg-orange-50 text-orange-600'}`}>
+          <div className={`p-3 rounded-lg ${
+            icon === BookOpenIcon ? 'bg-blue-50 text-blue-600' : 
+            icon === BoltIcon ? 'bg-purple-50 text-purple-600' : 
+            icon === CurrencyDollarIcon ? 'bg-green-50 text-green-600' : 
+            'bg-orange-50 text-orange-600'
+          }`}>
             {React.createElement(icon, { className: "h-6 w-6" })}
           </div>
         </div>
@@ -201,15 +213,80 @@ const Dashboard = () => {
     );
   };
 
-  if (error) {
+  // Use effect for initial load
+  useEffect(() => {
+    const abortController = new AbortController();
+    fetchDashboardData(abortController.signal);
+    
+    return () => {
+      abortController.abort();
+    };
+  }, [fetchDashboardData]);
+
+  // Render loading state
+  if (isLoading && !stats.totalWorkouts) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <SkeletonLoader className="h-8 w-64 mb-2" />
+            <SkeletonLoader className="h-4 w-48" />
+          </div>
+          <SkeletonLoader className="h-10 w-24" />
+        </div>
+        
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <SkeletonLoader className="h-6 w-32 mb-2" />
+              <SkeletonLoader className="h-8 w-20 mb-4" />
+              <SkeletonLoader className="h-4 w-24" />
+            </div>
+          ))}
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <SkeletonLoader className="h-6 w-48" />
+            <SkeletonLoader className="h-8 w-24" />
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center justify-between p-4 border-b border-gray-100">
+                <div className="flex items-center space-x-4">
+                  <SkeletonLoader className="h-10 w-10 rounded-full" />
+                  <div>
+                    <SkeletonLoader className="h-4 w-32 mb-2" />
+                    <SkeletonLoader className="h-3 w-24" />
+                  </div>
+                </div>
+                <SkeletonLoader className="h-4 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render error state
+  if (error && !stats.totalWorkouts) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="text-red-500 mb-4">⚠️ {error}</div>
+        <ExclamationCircleIcon className="h-12 w-12 text-red-500 mb-4" />
+        <div className="text-red-600 font-medium mb-4">Error Loading Dashboard</div>
+        <p className="text-gray-600 mb-6 text-center max-w-md">{error}</p>
         <button
           onClick={fetchDashboardData}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
+          disabled={isRefreshing}
         >
-          Retry
+          {isRefreshing ? (
+            <>
+              <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
+              Refreshing...
+            </>
+          ) : 'Try Again'}
         </button>
       </div>
     );
@@ -217,9 +294,28 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-        <p className="text-gray-600 mt-1">Welcome back! Here's what's happening today.</p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+          <p className="text-gray-600 mt-1">
+            Welcome back! {lastUpdated && `Last updated at ${lastUpdated}`}
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className={`mt-4 sm:mt-0 px-4 py-2 text-sm font-medium rounded-md flex items-center ${
+            isRefreshing 
+              ? 'bg-gray-200 text-gray-600 cursor-not-allowed' 
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+          }`}
+          disabled={isRefreshing}
+        >
+          <ArrowPathIcon 
+            className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} 
+          />
+          {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+        </button>
       </div>
 
       {/* Stats Grid */}
@@ -255,17 +351,20 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {quickActions.map((action) => (
-          <button
-            key={action.id}
-            onClick={() => handleAction(action.action, action.path)}
-            className={`flex items-center justify-center space-x-2 p-4 rounded-xl text-white font-medium transition-all hover:opacity-90 ${action.color}`}
-          >
-            <action.icon className="h-5 w-5" />
-            <span>{action.title}</span>
-          </button>
-        ))}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickActions.map((action) => (
+            <button
+              key={action.id}
+              onClick={() => handleAction(action)}
+              className={`flex items-center justify-center space-x-2 p-4 rounded-xl text-white font-medium transition-all duration-200 hover:opacity-90 hover:scale-105 active:scale-95 ${action.color} shadow-sm hover:shadow-md`}
+            >
+              <action.icon className="h-5 w-5" />
+              <span>{action.title}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Recent Activities */}
@@ -281,24 +380,14 @@ const Dashboard = () => {
             </button>
           </div>
           
-          {error ? (
-            <div className="flex items-center justify-center p-4 text-red-600 bg-red-50 rounded-lg">
+          {error && (
+            <div className="flex items-center justify-center p-4 text-red-600 bg-red-50 rounded-lg mb-4">
               <ExclamationCircleIcon className="h-5 w-5 mr-2" />
               <span>{error}</span>
             </div>
-          ) : isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center space-x-4 p-3 animate-pulse">
-                  <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : recentActivities.length > 0 ? (
+          )}
+
+          {recentActivities.length > 0 ? (
             <>
               <div className="space-y-4">
                 {recentActivities.map((activity, index) => {
@@ -323,7 +412,7 @@ const Dashboard = () => {
                         <p className="text-sm text-gray-500">{activity.description}</p>
                         <div className="flex items-center justify-between mt-1">
                           <p className="text-xs text-gray-400">
-                            {new Date(activity.timestamp).toLocaleString()}
+                            {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : 'Recent'}
                           </p>
                           {activity.user && (
                             <span className="inline-flex items-center text-xs text-gray-500">
@@ -375,9 +464,14 @@ const Dashboard = () => {
               <p className="mt-2 text-gray-500">No recent activities found</p>
               <button
                 onClick={() => fetchDashboardData()}
-                className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+                className="mt-2 text-sm text-blue-600 hover:text-blue-700 flex items-center justify-center"
               >
-                Refresh
+                {isRefreshing ? (
+                  <>
+                    <ArrowPathIcon className="animate-spin h-4 w-4 mr-1" />
+                    Refreshing...
+                  </>
+                ) : 'Refresh'}
               </button>
             </div>
           )}
