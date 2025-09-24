@@ -129,63 +129,86 @@ const Dashboard = () => {
 
   // Set up WebSocket connection
   useEffect(() => {
-    // Determine WebSocket URL based on environment
-    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const host = window.location.host;
-    const wsUrl = `${protocol}${host.replace('localhost:5173', 'localhost:5000')}`;
-    
-    console.log('Connecting to WebSocket:', wsUrl);
-    
-    const websocket = new WebSocket(wsUrl);
-    
-    websocket.onopen = () => {
-      console.log('WebSocket Connected');
-      setWs(websocket);
-    };
+    let websocket;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    let reconnectTimeout;
 
-    websocket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log('Received WebSocket message:', data);
-        
-        if (data.type === 'new_activity') {
-          setRecentActivities(prev => [data.data, ...prev.slice(0, activitiesPerPage - 1)]);
-          
-          // Show a toast notification for new activities
-          if (data.data && data.data.title) {
-            // You can use your preferred notification system here
-            console.log('New activity:', data.data.title);
-          }
-        }
-      } catch (error) {
-        console.error('Error processing WebSocket message:', error);
-      }
-    };
-
-    websocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setError('Connection error. Some features may not work in real-time.');
-    };
-
-    websocket.onclose = () => {
-      console.log('WebSocket Disconnected');
-      setWs(null);
+    const connectWebSocket = () => {
+      // In development, connect directly to the backend server
+      // In production, use the same host but with wss://
+      const isLocalhost = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1';
       
-      // Attempt to reconnect after 5 seconds
-      setTimeout(() => {
-        console.log('Attempting to reconnect WebSocket...');
-        const newWebsocket = new WebSocket(wsUrl);
-        setWs(newWebsocket);
-      }, 5000);
+      const protocol = isLocalhost ? 'ws://' : 'wss://';
+      const host = isLocalhost ? 'localhost:5000' : window.location.host;
+      const wsUrl = `${protocol}${host}`;
+      
+      console.log('Connecting to WebSocket:', wsUrl);
+      
+      websocket = new WebSocket(wsUrl);
+      
+      websocket.onopen = () => {
+        console.log('WebSocket Connected');
+        reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+        setWs(websocket);
+      };
+
+      websocket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('Received WebSocket message:', data);
+          
+          if (data.type === 'new_activity') {
+            setRecentActivities(prev => [data.data, ...prev.slice(0, activitiesPerPage - 1)]);
+            
+            if (data.data?.title) {
+              console.log('New activity:', data.data.title);
+            }
+          }
+        } catch (error) {
+          console.error('Error processing WebSocket message:', error);
+        }
+      };
+
+      websocket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setError('Connection error. Some features may not work in real-time.');
+      };
+
+      websocket.onclose = (event) => {
+        console.log('WebSocket Disconnected', event.code, event.reason);
+        setWs(null);
+        
+        // Only attempt to reconnect if we haven't exceeded max attempts
+        if (reconnectAttempts < maxReconnectAttempts) {
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff, max 30s
+          console.log(`Attempting to reconnect in ${delay}ms... (Attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+          
+          reconnectTimeout = setTimeout(() => {
+            reconnectAttempts++;
+            connectWebSocket();
+          }, delay);
+        } else {
+          console.warn('Max reconnection attempts reached. Please refresh the page to try again.');
+          setError('Disconnected from server. Please refresh the page to reconnect.');
+        }
+      };
     };
 
-    // Clean up on unmount
+    // Initial connection
+    connectWebSocket();
+
+    // Cleanup function
     return () => {
-      if (websocket.readyState === WebSocket.OPEN) {
-        websocket.close();
+      if (websocket) {
+        websocket.close(1000, 'Component unmounted');
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
       }
     };
-  }, []);
+  }, []); // Empty dependency array means this effect runs once on mount
 
   // Fetch data when page changes
   useEffect(() => {

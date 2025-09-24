@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
-import { initWebSocket, broadcastActivity } from './utils/websocket.js';
+import { initWebSocket, broadcastActivity, wss } from './utils/websocket.js';
 import { connectToDatabase } from './db.js';
 import financeRoutes from './routes/finance.js';
 import dashboardRoutes from './routes/dashboard.js';
@@ -21,7 +21,7 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 // Initialize WebSocket server
-initWebSocket(server);
+const webSocketServer = initWebSocket(server);
 
 // Export the broadcast function for use in routes
 export { broadcastActivity };
